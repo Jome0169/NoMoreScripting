@@ -18,7 +18,6 @@ def read_in_fasta(arg1):
     file_dict = SeqIO.index(arg1, "fasta")
     return file_dict
 
-
 def split_scaffold(fasta_file,scaf_name,loc_split):
     """TODO: Docstring for split_scaffold.
 
@@ -46,6 +45,7 @@ def split_scaffold(fasta_file,scaf_name,loc_split):
         finallist.append([fastastringsecond,secondhalf])
     
     elif scaf_name not in fasta_file:
+        print("scaffold %s not found in file" % scaf_name)
         exit(-2)
 
     return finallist
@@ -107,6 +107,31 @@ def brokenscafwriter(outputname,fasta_file,scaf_name,borken_scaf,scaf_rename):
                 z.write(str(item[1].seq))
                 z.write('\n')
 
+
+def replace_name(fasta_file_dict, replace_file):
+    """TODO: Docstring for replace_name.
+
+    :fasta_file_dict: TODO
+    :replace_file: TODO
+    :returns: TODO
+
+    """
+    pairs = []
+    with open(replace_file, 'r') as f:
+        for line in f:
+            cleanpair = line.split()
+            if cleanpair == None:
+                pass
+            else:
+                pairs.append(cleanpair)
+    return pairs
+
+
+            
+
+
+
+
 def rename_scaf_writer(outputname,fasta_file,scaf_rename):
     """If appending string to scaffold name, write new output fasta file. This
     seemed easier than making a bunch of if then statments below.
@@ -166,7 +191,6 @@ def flaten_fasta(fasta_dict, outputname):
             f.write('\n')
             f.write(str(val.seq))
             f.write('\n')
- 
 
 
 
@@ -184,9 +208,13 @@ def get_parser():
             required=False,dest='ra') 
     parser.add_argument('-uw','--unwrap', help='unwrap fasta file',
             required=False,dest='uw') 
+    parser.add_argument('-p','--pull', help='pull out specific scaffolds, write \
+            to file',
+            required=False,dest='p') 
+
 
     parser.add_argument('-o','--output', help='output file to write to', \
-            required=True, dest='o')
+            required=False, dest='o')
     args = vars(parser.parse_args())    
     return parser
 
