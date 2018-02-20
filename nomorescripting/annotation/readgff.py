@@ -329,17 +329,10 @@ def write_output_file2(gff_to_write, output_file):
             f.write('\n')
 
 
-
-
-
-
-
-
-
-
 def get_parser():
-    parser = argparse.ArgumentParser(description='Software to read in gff\
-            file and do basic functionality that is often required  ')
+    parser = argparse.ArgumentParser(description='Software to read in gff \
+            file and do basic functionality \
+            that is often required  ')
     parser.add_argument('-g','--gff', help='gff file to read', \
             required=True, dest='g')
     parser.add_argument('-ra','--renameappend', help='Rename base scaffold', \
@@ -403,7 +396,7 @@ if __name__ == "__main__":
         final_list = filter_gff_by_len(list_format_gff3,args.f1,args.f2)
         rename_spaln(final_list)
         no_genes_gff_nest = remove_item_nested_list(final_list,'gene')
-        write_output_file2(final_list,args.o)
+        write_output_file2(no_genes_gff_nest,args.o)
 
 
 
