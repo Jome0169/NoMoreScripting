@@ -112,6 +112,7 @@ def plot_lens(nested_gff_list):
     plt.show()
 
 
+
 def filter_gff_by_len(nested_gff,smallest,largest):
     """filters out exon hits that do not meet certain length criterias. This is
     useful in that some programs that output gff3 files have very truncated
@@ -135,6 +136,111 @@ def filter_gff_by_len(nested_gff,smallest,largest):
             failing_len_criteria.append(item)
     
     return passing_len_criteria
+
+
+def rename_spaln(nested_gff):
+    """SPALN creates a weird output format that doesn't play nice with msort
+    programs. So to fix this, this function will go through and fix each Gff
+    hit. Rexplaing the "ALN" as well as removing the gff lines that are
+    duplicate "mRNA" and "Gene"
+
+    :arg1: TODO
+    :returns: TODO
+
+    """
+    
+    def retrieve_target_name(nested_gene):
+        """SPALN has a stupid ass name generator. Need to retrive target name
+        from an individual
+        :returns: TODO
+
+        """
+        target_name = None
+
+        item_to_break = nested_gene[-1]
+        name_id_string = item_to_break[8]
+        break_name_string = name_id_string.split(';')
+
+        for name in break_name_string:
+            if name.startswith("Target"):
+                clean_target_name = name.replace('Target=', '')
+                target_name = clean_target_name
+            else:
+                pass
+
+        if target_name != None:
+            return target_name
+        elif target_name == None:
+            return None
+
+
+    def splan_name_editor(spaln_name_string, clean_target_name, hittype):
+        """edits the spaln annotation name from Gff3 files and rewrites them to
+        make a little more sense. Removes the "gene" items reformats all other
+        items.
+
+        :spaln_string: TODO
+        :returns: TODO
+
+        """
+        final_string = ""
+        #replace "name" for mRNA
+        if hittype == 'mRNA':
+            add_final_name = 'Name=' + clean_target_name
+            break_name_string = spaln_name_string.split(';')
+            final_string += break_name_string[0] + ';'
+            final_string = final_string + add_final_name
+        #Remove Name for mRNA
+        elif hittype == 'cds':
+            list_hits = []
+            break_name_string = spaln_name_string.split(';')
+            for item in break_name_string:
+                if "Name=" not in item:
+                    list_hits.append(item)
+                else:
+                    pass
+            final_string = (';'.join(list_hits))
+                
+        return final_string
+
+
+    for gene in nested_gff:
+        target_name = retrieve_target_name(gene)
+        for hit in gene:
+            hit[1] = 'blastx'
+            #Replace "ALN"
+            if hit[2] == "mRNA":
+                hit[2] = "protein_match"
+                get_final_string = splan_name_editor(hit[8], target_name, 'mRNA')
+                hit[8] = get_final_string
+
+            elif hit[2] == 'cds':
+                hit[2] = "match_part"
+                get_final_string = splan_name_editor(hit[8], target_name, 'cds')
+                hit[8] = get_final_string
+
+    return nested_gff
+
+
+def remove_item_nested_list(nested_gff, remove_string):
+    """removes an item from nested_gff and returns an item that you do want
+
+    :nested_gff: TODO
+    :returns: TODO
+
+    """
+    copy = []
+
+    for gene in nested_gff:
+        smaller_list = []
+        for hit in gene:
+            if remove_string in hit:
+                pass
+            else:
+                smaller_list.append(hit)
+        copy.append(smaller_list)
+
+    return copy
 
 
 def fix_split_scaffold(gff_record,split_scaffold,loc_split):
@@ -214,8 +320,11 @@ def write_output_file2(gff_to_write, output_file):
         f.write('\n')
         for nest in gff_to_write:
             for item in nest:
-                f.write('\t'.join(item))
-                f.write('\n')
+                if item == False:
+                    pass
+                else:
+                    f.write('\t'.join(item))
+                    f.write('\n')
             f.write("###")
             f.write('\n')
 
@@ -245,6 +354,11 @@ def get_parser():
     parser.add_argument('-f2','--filter2', help='Remove Gff genes larger than number',\
             required=False,dest='f2') 
 
+    parser.add_argument('-spaln','--spaln',action='store_true', help='If SPALN file, rename things',\
+            required=False,dest='spaln') 
+
+
+
     parser.add_argument('-o','--output', help='output file to write to', \
             required=True, dest='o')
     args = vars(parser.parse_args())    
@@ -273,13 +387,23 @@ if __name__ == "__main__":
         write_output_file(fixed_gff_file,args.o)
     
     elif args.f1 != None or args.f2 != None:
-        tryagain = read_in_gff2(args.g)
-        final_list = filter_gff_by_len(tryagain,args.f1,args.f2)
+        list_format_gff3 = read_in_gff2(args.g)
+        final_list = filter_gff_by_len(list_format_gff3,args.f1,args.f2)
         write_output_file2(final_list,args.o)
         plot_lens(final_list)
 
-
-
+    elif args.spaln != None and args.f1 == None and args.f2 == None:
+        list_format_gff3 = read_in_gff2(args.g)
+        rename_spaln(list_format_gff3)
+        no_genes_gff_nest = remove_item_nested_list(list_format_gff3,'gene')
+        write_output_file2(no_genes_gff_nest,args.o)
+    
+    elif args.spaln != None and args.f1 != None and args.f2 != None:
+        list_format_gff3 = read_in_gff2(args.g)
+        final_list = filter_gff_by_len(list_format_gff3,args.f1,args.f2)
+        rename_spaln(final_list)
+        no_genes_gff_nest = remove_item_nested_list(final_list,'gene')
+        write_output_file2(final_list,args.o)
 
 
 
