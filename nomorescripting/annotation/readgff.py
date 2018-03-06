@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.plotly as py
 
-
 def read_in_gff(arg1):
     """TODO: Docstring for read_in_gff.
 
@@ -76,7 +75,9 @@ def rename_scaffold(gff_record, scaf_rename):
 
 
 def calculate_gene_len(nested_gff_list):
-    """TODO: Docstring for calculate_gene_len.
+    """We need to know the full length of mRNA encoding regions. For this, if a
+    annoation has 'mrna' in its annotation we take the beggining and shbtract
+    it's total hit len.
 
     :gff_record: TODO
     :returns: TODO
@@ -120,8 +121,8 @@ def filter_gff_by_len(nested_gff,smallest,largest):
     gff3, smallest value to filter out, largest value to filter out.
 
     :nested_gff: TODO
-    :smallest: TODO
-    :largest: TODO
+    :smallest: Val
+    :largest: val
     :returns: TODO
 
     """
@@ -203,7 +204,7 @@ def rename_spaln(nested_gff):
                 
         return final_string
 
-
+    #Note this function call set is in a nested function above.
     for gene in nested_gff:
         target_name = retrieve_target_name(gene)
         for hit in gene:
@@ -244,7 +245,8 @@ def remove_item_nested_list(nested_gff, remove_string):
 
 
 def fix_split_scaffold(gff_record,split_scaffold,loc_split):
-    """TODO: Docstring for fix_split_scaffold.
+    """Takes in a nested list of list and does some stuff. Finds the scaffodl
+    we want to split
     :gff_record: TODO
     :split_scaffold: TODO
     :loc_split: TODO
@@ -254,10 +256,12 @@ def fix_split_scaffold(gff_record,split_scaffold,loc_split):
     """
     reformatted_gff = []
     
-    for gff in gff_record:
-        if gff[0] != split_scaffold:
-            reformatted_gff.append(gff)
-        elif gff[0] == split_scaffold:
+    for nested_gff in gff_record:
+        if nested_gff[0][0] != split_scaffold:
+            reformatted_gff.append(nested_gff)
+
+        elif nested_gff[0][0] == split_scaffold:
+
             #Do Genes hit to certain ones
             if int(gff[3]) < int(loc_split) and int(gff[4]) < int(loc_split):
                 rename = gff[0] + '_1'
@@ -370,16 +374,18 @@ if __name__ == "__main__":
         print("Need Location to split scaffold")
         sys.exit(2)
     #split scaffold no rename
+    
     elif args.s != None and args.l != None and args.ra == None:
         fixed_gff_file = fix_split_scaffold(gff_file,args.s, args.l)
         write_output_file(fixed_gff_file,args.o)
-
     elif args.s != None and args.l != None and args.ra != None:
         fixed_gff_file = fix_split_scaffold(gff_file,args.s, args.l)
         rename_scaffold(fixed_gff_file,args.ra)
         write_output_file(fixed_gff_file,args.o)
     
-    elif args.f1 != None or args.f2 != None:
+    
+    
+    elif args.spaln == None and args.f1 != None or args.f2 != None:
         list_format_gff3 = read_in_gff2(args.g)
         final_list = filter_gff_by_len(list_format_gff3,args.f1,args.f2)
         write_output_file2(final_list,args.o)

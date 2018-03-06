@@ -50,6 +50,27 @@ def split_scaffold(fasta_file,scaf_name,loc_split):
 
     return finallist
 
+
+def filter_fasta_dict(fasta_dict, filter1, filter2):
+    """TODO: Docstring for filter_fasta_dict.
+
+    :fasta_dict: TODO
+    :filter1: TODO
+    :filter2: TODO
+    :returns: TODO
+
+    """
+    final_file_list = []
+
+    for record in SeqIO.parse(fasta_dict):
+        if len(record.seq) <= int(filter1) and len(record.seq) >= int(filter2):
+            final_file_list.append(record)
+        elif len(record.seq) >= int(filter1) and len(record.seq) <= int(filter2):
+            pass
+    return final_file_list
+
+
+
 def brokenscafwriter(outputname,fasta_file,scaf_name,borken_scaf,scaf_rename):
     """Writes the broken scaffold to 2 outputs. Borken scaffold, rest of
     scaffolds, 
@@ -127,11 +148,6 @@ def replace_name(fasta_file_dict, replace_file):
     return pairs
 
 
-            
-
-
-
-
 def rename_scaf_writer(outputname,fasta_file,scaf_rename):
     """If appending string to scaffold name, write new output fasta file. This
     seemed easier than making a bunch of if then statments below.
@@ -203,15 +219,23 @@ def get_parser():
             required=False,dest='s') 
     parser.add_argument('-l','--locsplit', help='location in ccaffold to split',\
             required=False,dest='l') 
+
+
+    parser.add_argument('-fl1','--filter1', help='filter1. Sequences that do\
+            not meet this cut off will be filtered out. This is the LOW end',\
+            required=False,dest='fl2') 
+
+    parser.add_argument('-fl2','--filter2', help='filter2. Sequences that are\
+            longer than this value will be sequenced out',\
+            required=False,dest='fl2') 
+
     parser.add_argument('-ra','--renameappend', help='append string to\
             scaffolds to rename',
             required=False,dest='ra') 
     parser.add_argument('-uw','--unwrap', help='unwrap fasta file',
             required=False,dest='uw') 
     parser.add_argument('-p','--pull', help='pull out specific scaffolds, write \
-            to file',
-            required=False,dest='p') 
-
+            to file',required=False,dest='p') 
 
     parser.add_argument('-o','--output', help='output file to write to', \
             required=False, dest='o')
