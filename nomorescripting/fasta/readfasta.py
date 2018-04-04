@@ -60,15 +60,14 @@ def filter_fasta_dict(fasta_dict, filter1, filter2):
     :returns: TODO
 
     """
-    final_file_list = []
+    final_file_list = {}
 
-    for record in SeqIO.parse(fasta_dict):
-        if len(record.seq) <= int(filter1) and len(record.seq) >= int(filter2):
-            final_file_list.append(record)
-        elif len(record.seq) >= int(filter1) and len(record.seq) <= int(filter2):
+    for scaf,record in fasta_dict.items():
+        if len(record.seq) >= int(filter1) and len(record.seq) <= int(filter2):
+            final_file_list[scaf] = record
+        elif len(record.seq) <= int(filter1) or len(record.seq) >= int(filter2):
             pass
     return final_file_list
-
 
 
 def brokenscafwriter(outputname,fasta_file,scaf_name,borken_scaf,scaf_rename):
@@ -203,7 +202,8 @@ def flaten_fasta(fasta_dict, outputname):
     
     with open(outputname, 'a+') as f:
         for key, val in fasta_dict.items():
-            f.write(key)
+            add_carrot = '>' + str(key)
+            f.write(add_carrot)
             f.write('\n')
             f.write(str(val.seq))
             f.write('\n')
@@ -223,7 +223,7 @@ def get_parser():
 
     parser.add_argument('-fl1','--filter1', help='filter1. Sequences that do\
             not meet this cut off will be filtered out. This is the LOW end',\
-            required=False,dest='fl2') 
+            required=False,dest='fl1') 
 
     parser.add_argument('-fl2','--filter2', help='filter2. Sequences that are\
             longer than this value will be sequenced out',\
@@ -267,4 +267,12 @@ if __name__ == "__main__":
         file_dict = read_in_fasta(args.f)
         flaten_fasta(file_dict,args.o)
 
+
+    elif args.ra == None and args.s == None and args.l == None \
+    and args.uw == None and args.fl1 != None and args.fl2 != None:
+    
+        file_dict = read_in_fasta(args.f)
+        final_list = filter_fasta_dict(file_dict,args.fl1, args.fl2)
+        print(final_list)
+        flaten_fasta(final_list, args.o)
 

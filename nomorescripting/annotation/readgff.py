@@ -69,6 +69,8 @@ def rename_scaffold(gff_record, scaf_rename):
     for item in gff_record:
         reformat_name = item[0]
         new_scaf_name = str(scaf_rename) + reformat_name
+        print(new_scaf_name)
+        input()
         item[0] = new_scaf_name
     return gff_record
 
@@ -382,8 +384,12 @@ if __name__ == "__main__":
         fixed_gff_file = fix_split_scaffold(gff_file,args.s, args.l)
         rename_scaffold(fixed_gff_file,args.ra)
         write_output_file(fixed_gff_file,args.o)
-    
-    
+        
+    elif args.s == None and args.l == None and args.ra != None:
+        print("YEA") 
+        rename_scaffold(gff_file, args.ra)
+        write_output_file(gff_file,args.o)
+
     
     elif args.spaln == None and args.f1 != None or args.f2 != None:
         list_format_gff3 = read_in_gff2(args.g)
@@ -392,6 +398,8 @@ if __name__ == "__main__":
         plot_lens(final_list)
 
     elif args.spaln != None and args.f1 == None and args.f2 == None:
+
+
         list_format_gff3 = read_in_gff2(args.g)
         rename_spaln(list_format_gff3)
         no_genes_gff_nest = remove_item_nested_list(list_format_gff3,'gene')
