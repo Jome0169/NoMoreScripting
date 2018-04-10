@@ -35,8 +35,8 @@ def split_scaffold(fasta_file,scaf_name,loc_split):
 
     if scaf_name in fasta_file:
         total_fasta_len = len(fasta_file[scaf_name])
-        firsthalf = fasta_file[scaf_name][0:int(loc_split) - 1]
-        secondhalf = fasta_file[scaf_name][int(loc_split)+1:total_fasta_len]
+        firsthalf = fasta_file[scaf_name][0:int(loc_split)]
+        secondhalf = fasta_file[scaf_name][int(loc_split)+1:]
         
         fastastringfirst = str(scaf_name) + '_1'
         fastastringsecond = str(scaf_name) + '_2'
@@ -259,7 +259,11 @@ if __name__ == "__main__":
     elif args.ra != None and args.s == None and args.l == None:
         file_dict = read_in_fasta(args.f)
         rename_scaf_writer(args.o,file_dict,args.ra)
-  
+    elif args.ra == None and args.s != None and args.l != None:
+        file_dict = read_in_fasta(args.f)
+        broken_scaffold = split_scaffold(file_dict, args.s, args.l)
+        brokenscafwriter(args.o,file_dict,args.s,broken_scaffold,None)
+
     #If we just want to unwrap fasta
     elif args.ra == None and args.s == None and args.l == None \
     and args.uw != None:

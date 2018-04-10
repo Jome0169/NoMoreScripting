@@ -9,10 +9,6 @@ from datetime import datetime
 import argparse
 
 
-
-
-
-
 def read_abinit_names(file_abinit):
     """reads in abinit names into a list
 

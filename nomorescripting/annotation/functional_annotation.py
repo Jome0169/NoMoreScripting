@@ -1,6 +1,5 @@
 from sys import argv 
 
-
 """
 Takes in an AHRD output file, and a gff file with corresponding names and adds
 the function from the AHRD file into the Gff3 file.
@@ -27,7 +26,6 @@ def read_ahrd_csv(ahrd_file):
                 annotation_key[clean_line[0]] = clean_line[-1]
 
     return annotation_key
-
 
 def read_mapping_file(map_file):
     """reads in mapping file
@@ -86,15 +84,14 @@ def edit_gff_list(gff_list, ahrd_dict):
                 clean_ID_Name=(';'.join(clean_out_AED[0:2]))
                 
                 if key_name in ahrd_dict:
-                    annoation_hit = ahrd_dict[key_name]
+                    annoation_hit = ahrd_dict[key_name].replace('=', '').replace(';','')
+
                     create_funct_string = ";Note=%s" % annoation_hit 
                     final_func_string = clean_ID_Name + \
                     create_funct_string
 
                     gff[8] = final_func_string
-
                     print('\t'.join(gff))
-
                 else:
                     pass
                     print('\t'.join(gff))
@@ -110,16 +107,18 @@ def edit_gff_list(gff_list, ahrd_dict):
  
 
                 if key_name in ahrd_dict:
-                    annoation_hit = ahrd_dict[key_name]
+                    annoation_hit = ahrd_dict[key_name].replace('=', '').replace(';','')
                     
                     create_funct_string = ";Note=%s" % annoation_hit 
 
                     final_func_string = clean_ID_Name + \
                     create_funct_string
-
                     gff[8] = final_func_string
-                    
                     print('\t'.join(gff))
+
+                else:
+                    print('\t'.join(gff))
+
 
             elif gff[0].startswith('#'):
                 print('\t'.join(gff))

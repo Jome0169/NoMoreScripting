@@ -258,12 +258,11 @@ def fix_split_scaffold(gff_record,split_scaffold,loc_split):
     """
     reformatted_gff = []
     
-    for nested_gff in gff_record:
-        if nested_gff[0][0] != split_scaffold:
-            reformatted_gff.append(nested_gff)
+    for gff in gff_record:
+        if gff[0] != split_scaffold:
+            reformatted_gff.append(gff)
 
-        elif nested_gff[0][0] == split_scaffold:
-
+        elif gff[0] == split_scaffold:
             #Do Genes hit to certain ones
             if int(gff[3]) < int(loc_split) and int(gff[4]) < int(loc_split):
                 rename = gff[0] + '_1'
@@ -274,7 +273,7 @@ def fix_split_scaffold(gff_record,split_scaffold,loc_split):
                 #If we need to split this scaffold, recalibrate bp position
                 rename = gff[0] + '_2'
                 gff[0] = rename 
-                hit1 = int(gff[3]) - int(loc_split)
+                hit1 = (int(gff[3]) - int(loc_split)) 
                 hit2= int(gff[4]) - int(loc_split)
                 gff[3] = str(hit1)
                 gff[4] = str(hit2)
@@ -304,8 +303,28 @@ def write_output_file(gff_to_write, output_file):
         f.write('##gff-version 3')
         f.write('\n')
         for item in gff_to_write:
-            f.write('\t'.join(item))
-            f.write('\n')
+            if len(item) > 9:
+                # RepeatRunner gff3 hits are extremely uncooperative for some
+                # reason, so I am removing them.
+                pass
+                #print(item)
+                #fuse_list_items = ''.join(item[9:])
+                ##print(item)
+                ##print(fuse_list_items)
+                #del item[10:]
+
+                #item[9] = fuse_list_items
+                ##print(item)
+                ##input()
+                ##print('\n')
+                #f.write('\t'.join(item))
+                #f.write('\n')
+            elif "scaffold148" in item[0]:
+                f.write('\t'.join(item))
+                f.write('\n')
+            else:
+                f.write('\t'.join(item))
+                f.write('\n')
 
 
 def write_output_file2(gff_to_write, output_file):
@@ -367,8 +386,11 @@ def get_parser():
 
 if __name__ == "__main__":
     args = get_parser().parse_args()
-    gff_file = read_in_gff(args.g)
     
+    print("Reading in gff3 file")
+    gff_file = read_in_gff(args.g)
+    print("Exeuting Other commands")
+
     if args.s == None and args.l != None:
         print("Need Scaffold Name to split")
         sys.exit(2)
@@ -378,6 +400,8 @@ if __name__ == "__main__":
     #split scaffold no rename
     
     elif args.s != None and args.l != None and args.ra == None:
+
+        print("We are going to split scaffold %s" % args.s)
         fixed_gff_file = fix_split_scaffold(gff_file,args.s, args.l)
         write_output_file(fixed_gff_file,args.o)
     elif args.s != None and args.l != None and args.ra != None:

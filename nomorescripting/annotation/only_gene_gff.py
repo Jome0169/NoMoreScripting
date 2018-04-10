@@ -50,8 +50,9 @@ def only_print_genes(gff_list):
 
 def get_parser():
     parser = argparse.ArgumentParser(description='The purpose of this script is \
-            add in abinitio gene predictions back into the mix in AllMaps.')
-    parser.add_argument('-g','--gff', help='gff file to add abinitio genes back into', required=True, dest='g')
+            print only gene encoding regions into a gff3 file instead of all\
+            extra material as output by MAKER.')
+    parser.add_argument('-g','--gff', help='gff file to extract genes back into', required=True, dest='g')
 
     args = vars(parser.parse_args())    
     return parser

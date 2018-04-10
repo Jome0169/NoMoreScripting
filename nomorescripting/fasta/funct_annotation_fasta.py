@@ -195,7 +195,7 @@ def create_gff3_string(ID_Name,gff3_dict, struct):
     if struct == 'p':
         prot_len = int(total_len)
 
-        format_location_string = str(retrieve_gff4_annot[0])+':'+start_loc + '-' \
+        format_location_string = str(retrieve_gff3_annot[0])+':'+start_loc + '-' \
         + stop_loc + ' ' + strand + ' '+  'LENGTH='+ str(round(prot_len))
 
     elif struct == 'n':
