@@ -249,7 +249,6 @@ def format_fasta_header(protein_dict, ahrd_dict, fasta_dict, gff3_dict, struc):
 
 
 
-
 prot_or_nuc = argv[4]
 protein_dict_info = scaf_header_load(argv[1])
 fasta_seq_dict = store_fasta_info(argv[1])

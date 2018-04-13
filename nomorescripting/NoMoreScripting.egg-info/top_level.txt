@@ -1,0 +1,4 @@
+BioPython
+matplotlib
+numpy
+statistics

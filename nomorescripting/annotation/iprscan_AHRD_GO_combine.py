@@ -303,18 +303,6 @@ if __name__ == "__main__":
 
     write_output_file(gene_headers,args.o)
 
-    #for key, item in gene_headers.items():
-    #    print(key)
-    #    print(item)
-    #    input()
-
-   
-   
-   
-   
-   #digest_iprscan_values(gene_headers)
-
-
     
 
 #Speed Things

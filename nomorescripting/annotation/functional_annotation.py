@@ -1,10 +1,18 @@
-from sys import argv 
 
 """
 Takes in an AHRD output file, and a gff file with corresponding names and adds
 the function from the AHRD file into the Gff3 file.
 
 """
+from sys import argv 
+from datetime import datetime
+from read_gff import read_in_gff
+from sys import argv
+import copy
+import argparse
+import sys
+import os
+
 
 def read_ahrd_csv(ahrd_file):
     """reads in ahrd file. Parses both the gene name and the funciton
@@ -147,8 +155,52 @@ def edit_gff_list(gff_list, ahrd_dict):
             print(' '.join(gff))
 
 
+def get_parser():
+    parser = argparse.ArgumentParser(description='Adds functional annotation to \
+            gff3 file. Requires AHRD output in csv format, and a gff3 file with \
+            corresponding names')
+    parser.add_argument('-g','--gff', help='gff file to read', \
+            required=True, dest='g')
+    parser.add_argument('-ahrd','--ahrd', help='prefix to ',\
+            required=True,dest='ahrd') 
+    args = vars(parser.parse_args())    
+    return parser
 
-annotation_key = read_ahrd_csv(argv[1])
-gff_lists = read_in_gff(argv[2])
 
-edit_gff_list(gff_lists,annotation_key)
+
+
+if __name__ == "__main__":
+    args = get_parser().parse_args()
+    annotation_key = read_ahrd_csv
+    read_gff_file = read_in_gff(args.g)
+    edit_gff_list(gff_lists,annotation_key)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

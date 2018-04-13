@@ -1,28 +1,25 @@
+# -*- coding: utf-8 -*-
+"""
+    annotation.create_mapping_file
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    This software creates a maping file from a gff file that can then be used
+    for efficient functional annotations. The mapping file will follow
+    standared TAIR11 practices. Before running this software ensure that the
+    gff fed into this has been SORTED and ORDEERED, as gene names are entiryly
+    dependent on locaiton
+
+    :copyright: (c) 2018 by YOUR_NAME.
+    :license: LICENSE_NAME, see LICENSE for more details.
+"""
+
 from datetime import datetime
+from read_gff import read_in_gff
 from sys import argv
 import copy
 import argparse
 import sys
 import os
-
-def read_in_gff(arg1):
-    """TODO: Docstring for read_in_gff.
-
-    :arg1: TODO
-    :returns: TODO
-
-    """
-    all_gff_records = []
-    
-    with open(arg1, 'r') as f:
-        for line in f:
-            if '#' in line:
-                pass
-            else:
-                cleanline = line.strip().split()
-                all_gff_records.append(cleanline)
-    return all_gff_records
-
 
 def extract_gene_mrna_names(gff_list, prefix_name, output_file):
     """reads in a list of gff3 lines, takes list and parses out either mrNAs or
@@ -96,13 +93,8 @@ def extract_gene_mrna_names(gff_list, prefix_name, output_file):
                         f.write('\n')
 
 
-
-
                 geneCounter += 10
 
-
-read_gff = read_in_gff(argv[1])
-extract_gene_mrna_names(read_gff)
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Reads in gff gene file and \
@@ -119,17 +111,6 @@ def get_parser():
             required=True, dest='o')
     args = vars(parser.parse_args())    
     return parser
-
-
-
-
-
-
-
-
-
-
-
 
 
 

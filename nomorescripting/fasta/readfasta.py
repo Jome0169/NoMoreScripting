@@ -7,6 +7,8 @@ import argparse
 import sys
 import os
 import itertools
+import statistics as s
+
 
 def read_in_fasta(arg1):
     """Reads in Fasta file using biopyton
@@ -32,6 +34,7 @@ def split_scaffold(fasta_file,scaf_name,loc_split):
         int(loc_split)
     except ValueError:
         print("%s not a int") % loc_split
+        sys.exit(-2)
 
     if scaf_name in fasta_file:
         total_fasta_len = len(fasta_file[scaf_name])
@@ -69,6 +72,31 @@ def filter_fasta_dict(fasta_dict, filter1, filter2):
             pass
     return final_file_list
 
+
+def report_fasta_stats(fasta_dict):
+    """takes in the fasta sequence object and reports back some basics
+    statistics. 
+
+    Mean, Medien, SmallestLegnth, LongestLength,
+
+    :fasta_dict: TODO
+    :returns: TODO
+
+    """
+    store_lens = []
+    for scaf_name, val in fasta_dict.items():
+        take_seq_len = len(val.seq)
+        store_lens.append(int(take_seq_len))
+    store_lens.sort()
+    mean_calc = s.mean(store_lens)
+    medien_calc = s.median(store_lens)
+    smalles_len = store_lens[0]
+    largest_len = store_lens[-1]
+
+    print("The Smallest len is %s" % str(smalles_len))
+    print("The largest len is %s" % str(largest_len))
+    print("The medien len is %s" % str(medien_calc))
+    print("The mean len is %s" % str(mean_calc))
 
 def brokenscafwriter(outputname,fasta_file,scaf_name,borken_scaf,scaf_rename):
     """Writes the broken scaffold to 2 outputs. Borken scaffold, rest of
@@ -208,18 +236,15 @@ def flaten_fasta(fasta_dict, outputname):
             f.write(str(val.seq))
             f.write('\n')
 
-
-
 def get_parser():
     parser = argparse.ArgumentParser(description='Software to read in fasta \
             file and do basic functionality that is often required  ')
     parser.add_argument('-f','--fasta', help='fasta file to read', \
             required=True, dest='f')
-    parser.add_argument('-s','--split', help='scaffold to split',\
+    parser.add_argument('-s','--scaffold', help='scaffold to split',\
             required=False,dest='s') 
     parser.add_argument('-l','--locsplit', help='location in ccaffold to split',\
             required=False,dest='l') 
-
 
     parser.add_argument('-fl1','--filter1', help='filter1. Sequences that do\
             not meet this cut off will be filtered out. This is the LOW end',\
@@ -237,6 +262,13 @@ def get_parser():
     parser.add_argument('-p','--pull', help='pull out specific scaffolds, write \
             to file',required=False,dest='p') 
 
+    parser.add_argument('-st','--stats', help='Reports basic stats mean, \
+            meadien, largest, smallest scaf ',required=False, \
+            action='store_true', dest='st') 
+    
+    parser.add_argument('-plt','--pltn', help='Plots Ns on each scaffold,' \
+            ,required=False, action='store_true', dest='plt') 
+
     parser.add_argument('-o','--output', help='output file to write to', \
             required=False, dest='o')
     args = vars(parser.parse_args())    
@@ -244,6 +276,11 @@ def get_parser():
 
 if __name__ == "__main__":
     args = get_parser().parse_args()
+    StartTime = datetime.now()
+
+    file_dict = read_in_fasta(args.f)
+    
+    ##At some point these need to be fixed
     if args.s != None and args.l == None:
         #exit if split given without where
         print("If splitting file need location so split scaffold")
@@ -253,14 +290,11 @@ if __name__ == "__main__":
         sys.exit(-2)
 
     elif args.ra != None and args.s != None and args.l != None:
-        file_dict = read_in_fasta(args.f)
         broken_scaffold = split_scaffold(file_dict, args.s, args.l)
         brokenscafwriter(args.o,file_dict,args.s,broken_scaffold,args.ra)
     elif args.ra != None and args.s == None and args.l == None:
-        file_dict = read_in_fasta(args.f)
         rename_scaf_writer(args.o,file_dict,args.ra)
     elif args.ra == None and args.s != None and args.l != None:
-        file_dict = read_in_fasta(args.f)
         broken_scaffold = split_scaffold(file_dict, args.s, args.l)
         brokenscafwriter(args.o,file_dict,args.s,broken_scaffold,None)
 
@@ -268,15 +302,38 @@ if __name__ == "__main__":
     elif args.ra == None and args.s == None and args.l == None \
     and args.uw != None:
 
-        file_dict = read_in_fasta(args.f)
         flaten_fasta(file_dict,args.o)
 
 
     elif args.ra == None and args.s == None and args.l == None \
     and args.uw == None and args.fl1 != None and args.fl2 != None:
     
-        file_dict = read_in_fasta(args.f)
         final_list = filter_fasta_dict(file_dict,args.fl1, args.fl2)
         print(final_list)
         flaten_fasta(final_list, args.o)
+    
+    elif args.ra == None and args.s == None and args.l == None \
+    and args.uw == None and args.fl1 == None and args.fl2 == None and args.plt \
+    == None and args.st \
+    != None:
+        report_fasta_stats(file_dict)
+    
+    
+    elif args.plt != None:
+        before_imoprt = datetime.now()
+        from plt_scaf import *
+        after_import = datetime.now()
+        
+        print(str(after_import - before_imoprt))
+
+        chrom_len_dict = calculate_chrom_len(file_dict)
+        ns_window_dict = calc_ns_in_window(file_dict, 100000)
+        hist_plot_ns(chrom_len_dict,ns_window_dict, 100000 )
+    else:
+        print("NO GO")
+   
+endtime = datetime.now()
+finaltime = endtime - StartTime 
+
+print ("Total Time %s" % (finaltime))
 
