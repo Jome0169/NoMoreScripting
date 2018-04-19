@@ -3,7 +3,7 @@ from sys import argv
 import copy
 from Bio import SeqIO
 from Bio.Seq import Seq
-import argparse import sys
+import argparse
 import os
 import itertools
 import statistics as s

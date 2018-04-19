@@ -246,6 +246,12 @@ def get_parser():
     parser.add_argument('-l','--locsplit', help='location in ccaffold to split',\
             required=False,dest='l') 
 
+    
+    
+    parser.add_argument('-slist','--scaffoldlist', help='scaffold list to be \
+            manipulated Ns about ',\
+            required=False,dest='slist') 
+
     parser.add_argument('-fl1','--filter1', help='filter1. Sequences that do\
             not meet this cut off will be filtered out. This is the LOW end',\
             required=False,dest='fl1') 
@@ -277,7 +283,8 @@ def get_parser():
 if __name__ == "__main__":
     args = get_parser().parse_args()
     StartTime = datetime.now()
-
+    
+    #Read Fasta File
     file_dict = read_in_fasta(args.f)
     
     ##At some point these need to be fixed
@@ -289,6 +296,7 @@ if __name__ == "__main__":
         print("If splitting file need scaffold to split")
         sys.exit(-2)
 
+    #Break scaffold with many different options
     elif args.ra != None and args.s != None and args.l != None:
         broken_scaffold = split_scaffold(file_dict, args.s, args.l)
         brokenscafwriter(args.o,file_dict,args.s,broken_scaffold,args.ra)
@@ -299,38 +307,31 @@ if __name__ == "__main__":
         brokenscafwriter(args.o,file_dict,args.s,broken_scaffold,None)
 
     #If we just want to unwrap fasta
-    elif args.ra == None and args.s == None and args.l == None \
-    and args.uw != None:
-
+    elif args.uw != None:
         flaten_fasta(file_dict,args.o)
-
-
-    elif args.ra == None and args.s == None and args.l == None \
-    and args.uw == None and args.fl1 != None and args.fl2 != None:
     
+    #Filter scaffolds of certain length
+    elif args.fl1 != None and args.fl2 != None:
         final_list = filter_fasta_dict(file_dict,args.fl1, args.fl2)
-        print(final_list)
         flaten_fasta(final_list, args.o)
     
-    elif args.ra == None and args.s == None and args.l == None \
-    and args.uw == None and args.fl1 == None and args.fl2 == None and args.plt \
-    == None and args.st \
-    != None:
+    #Stat culculatsion 
+    elif args.st != False:
         report_fasta_stats(file_dict)
     
-    
     elif args.plt != None:
-        before_imoprt = datetime.now()
         from plt_scaf import *
-        after_import = datetime.now()
-        
-        print(str(after_import - before_imoprt))
-
         chrom_len_dict = calculate_chrom_len(file_dict)
         ns_window_dict = calc_ns_in_window(file_dict, 100000)
-        hist_plot_ns(chrom_len_dict,ns_window_dict, 100000 )
-    else:
-        print("NO GO")
+
+        if args.slist != None:
+            scaffold_list = args.slist.split(',')
+            hist_plot_ns(chrom_len_dict,ns_window_dict,100000,scaffold_list)
+        else:
+            hist_plot_ns(chrom_len_dict,ns_window_dict, 100000, None)
+
+
+
    
 endtime = datetime.now()
 finaltime = endtime - StartTime 

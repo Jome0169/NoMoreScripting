@@ -1,8 +1,18 @@
-from sys import argv 
 
 """
 >AT1G01020.1 | ARV1 family protein | Chr1:6915-8666 REVERSE LENGTH=738 | 201606
 """
+
+from datetime import datetime
+from read_gff import read_in_gff
+from sys import argv
+import copy
+import argparse
+import sys
+import os
+
+
+
 
 def scaf_header_load(fasta_file):
     """read in fasta file
@@ -248,15 +258,52 @@ def format_fasta_header(protein_dict, ahrd_dict, fasta_dict, gff3_dict, struc):
             print(seqq)
 
 
+#Original command line calls
+#prot_or_nuc = argv[4]
+#protein_dict_info = scaf_header_load(argv[1])
+#fasta_seq_dict = store_fasta_info(argv[1])
+#
+#gff_mrna_info = read_in_gff(argv[3],argv[4], fasta_seq_dict)
+#protein_dict_info = scaf_header_load(argv[1])
+#annotation_key = read_ahrd_csv(argv[2])
+#
+#format_fasta_header(protein_dict_info,annotation_key,\
+#        fasta_seq_dict,gff_mrna_info, argv[4])
 
-prot_or_nuc = argv[4]
-protein_dict_info = scaf_header_load(argv[1])
-fasta_seq_dict = store_fasta_info(argv[1])
+def get_parser():
+    parser = argparse.ArgumentParser(description='Reads in AHRD file and fasta \
+            file and adds functional annotation to the FASTA. ABides by the \
+            Arabidposis naming scheme')
 
-gff_mrna_info = read_in_gff(argv[3],argv[4], fasta_seq_dict)
-protein_dict_info = scaf_header_load(argv[1])
-annotation_key = read_ahrd_csv(argv[2])
+    parser.add_argument('-f','--fasta', help='fasta file to add functional annotation', \
+            required=True, dest='f')
+    parser.add_argument('-ahrd','--ahrd', help='prefix to ',\
+            required=True,dest='ahrd') 
+    parser.add_argument('-g','--gff', help='gff file to read and use', \
+            required=True, dest='g')
+    parser.add_argument('-t','--type', help='what type of func file, optios are \
+            t for trnascripts n for cds and p for protein', \
+            required=True, dest='t')
 
-format_fasta_header(protein_dict_info,annotation_key,\
-        fasta_seq_dict,gff_mrna_info, argv[4])
+    args = vars(parser.parse_args())    
+    return parser
+
+
+
+
+if __name__ == "__main__":
+    args = get_parser().parse_args()
+    read_gff_file = read_in_gff(args.g)
+
+    prot_or_nuc = args.t
+    protein_dict_info = scaf_header_load(args.f)
+    fasta_seq_dict = store_fasta_info(args.f)
+    
+    gff_mrna_info = read_in_gff(args.g,args.t, fasta_seq_dict)
+    annotation_key = read_ahrd_csv(args.ahrd_file)
+    
+    format_fasta_header(protein_dict_info,annotation_key,\
+            fasta_seq_dict,gff_mrna_info, args.t)
+
+
 
