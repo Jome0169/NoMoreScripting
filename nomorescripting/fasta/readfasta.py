@@ -21,7 +21,8 @@ def read_in_fasta(arg1):
     return file_dict
 
 def split_scaffold(fasta_file,scaf_name,loc_split):
-    """TODO: Docstring for split_scaffold.
+    """Takes in a fasta file and split it at the location given by loc_split
+    variable which should be a number
 
     :fasta_file: TODO
     :scaf_name: TODO
@@ -83,20 +84,31 @@ def report_fasta_stats(fasta_dict):
     :returns: TODO
 
     """
+    number_over_25kb = 0
     store_lens = []
     for scaf_name, val in fasta_dict.items():
         take_seq_len = len(val.seq)
         store_lens.append(int(take_seq_len))
+        if take_seq_len >= 25000:
+            number_over_25kb += 1 
     store_lens.sort()
     mean_calc = s.mean(store_lens)
     medien_calc = s.median(store_lens)
     smalles_len = store_lens[0]
     largest_len = store_lens[-1]
 
+    total_sum = sum(store_lens)/2
+    
+    
+    #Print calculated stats
     print("The Smallest len is %s" % str(smalles_len))
     print("The largest len is %s" % str(largest_len))
     print("The medien len is %s" % str(medien_calc))
     print("The mean len is %s" % str(mean_calc))
+
+    print("The number of scaffolds over 25kB is %s" % str(number_over_25kb))
+    print()
+
 
 def brokenscafwriter(outputname,fasta_file,scaf_name,borken_scaf,scaf_rename):
     """Writes the broken scaffold to 2 outputs. Borken scaffold, rest of
@@ -246,8 +258,6 @@ def get_parser():
     parser.add_argument('-l','--locsplit', help='location in ccaffold to split',\
             required=False,dest='l') 
 
-    
-    
     parser.add_argument('-slist','--scaffoldlist', help='scaffold list to be \
             manipulated Ns about ',\
             required=False,dest='slist') 

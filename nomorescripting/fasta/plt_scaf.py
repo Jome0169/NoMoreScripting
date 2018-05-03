@@ -13,15 +13,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from itertools import islice
 
-
-
 def window(seq, n=2):
     "Returns a window (of width n) over data from the iterable"
     "   s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   "
 
     for i in range(0, len(seq), n):
         yield seq[i:i + n] 
-
 
 def calculate_chrom_len(seq_dict):
     """Calcualtes the fasta scaffold lengths.
@@ -35,8 +32,6 @@ def calculate_chrom_len(seq_dict):
         calc_len = len(value.seq)
         len_storage[key] = calc_len
     return len_storage
-
-
 
 def calc_ns_in_window(seq_dict, window_size):
     """calculate the number of n's in window size of X for later use in
@@ -142,15 +137,4 @@ def hist_plot_ns(chrom_len_dict, ns_window_dict, window_size, scaffold_list):
                 plt.clf()
             else:
                 pass
-
-
-
-
-
-
-
-
-
-
-
 
