@@ -389,7 +389,7 @@ if __name__ == "__main__":
     
     print("Reading in gff3 file")
     gff_file = read_in_gff(args.g)
-    print("Exeuting Other commands")
+    print("Exeuting 'Other' commands")
 
     if args.s == None and args.l != None:
         print("Need Scaffold Name to split")
