@@ -84,10 +84,12 @@ def report_fasta_stats(fasta_dict):
     :returns: TODO
 
     """
+    total_val = 0
     number_over_25kb = 0
     store_lens = []
     for scaf_name, val in fasta_dict.items():
         take_seq_len = len(val.seq)
+        total_val += take_seq_len
         store_lens.append(int(take_seq_len))
         if take_seq_len >= 25000:
             number_over_25kb += 1 
@@ -105,6 +107,7 @@ def report_fasta_stats(fasta_dict):
     print("The largest len is %s" % str(largest_len))
     print("The medien len is %s" % str(medien_calc))
     print("The mean len is %s" % str(mean_calc))
+    print("The total number of basepairs is %s" %str(total_val))
 
     print("The number of scaffolds over 25kB is %s" % str(number_over_25kb))
     print()

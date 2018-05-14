@@ -27,6 +27,8 @@ import numpy as np
 from Bio import SeqIO
 from Bio.Seq import Seq
 from matplotlib import pyplot as plt
+from scipy.stats import gaussian_kde
+
 
 
 def read_in_fasta(arg1):
@@ -49,15 +51,16 @@ def decipher_genome_size(genome_size):
     """
 
     change_consistent_cast = genome_size.upper()
-    if change_consistent_cast.endwith('MB'):
+    if change_consistent_cast.endswith('MB'):
         predicted_genome_size = int(change_consistent_cast.replace("MB", ''))
         final_predicted_genome_size = predicted_genome_size * 1000000
 
-    elif change_consistent_cast.endwith('GB'):
+    elif change_consistent_cast.ensdwith('GB'):
         predicted_genome_size = int(change_consistent_cast.replace("GB", ''))
         final_predicted_genome_size = predicted_genome_size * 1000000000
     elif genome_size == None:
         final_predicted_genome_size == None
+
     return final_predicted_genome_size
 
 def fasta_assembly_calculations(fasta_dict, genome_size):
@@ -71,22 +74,22 @@ def fasta_assembly_calculations(fasta_dict, genome_size):
 
     :fasta_dict: Biopython type seq object
     :returns: A list of either one or two values with N50 coming first
-    [N50, NG50]
+    [N50_number, L50, over_5k, over_25k, total_assembly_size]
 
     TODO: THROW ERROR IF ASSEMBLY IS LESS THAN halg the genome size
 
+
     """
-    
     total_assembly_size = 0
     over_5k = 0
     over_25k = 0
-    list_of_seq_sizes = []
+    seq_sizes = []
     for seq_name, val in fasta_dict.items():
         scaffold_len = (len(val.seq))
         #We only want to focus on scaffolds that appear to be real with decent
         #evidence
         if scaffold_len >= 500:
-            list_of_seq_sizes.append(scaffold_len)
+            seq_sizes.append(scaffold_len)
             
 
             if scaffold_len >= 25000:
@@ -100,19 +103,51 @@ def fasta_assembly_calculations(fasta_dict, genome_size):
             pass
     
     #Calculate N50 using cumulative sum function in numpy
+    list_of_seq_sizes = copy.deepcopy(seq_sizes)
     list_of_seq_sizes.sort()
     half_of_assembly_size = total_assembly_size/2
-    
     cumulative_sums = np.cumsum(list_of_seq_sizes)
+
     #Smallest number greater than N50 in cumulative sum list
     find_cumulative_sum_index = min(cumulative_sums[cumulative_sums >= \
             half_of_assembly_size])
     
     index_found = np.where(cumulative_sums == find_cumulative_sum_index)
-    N50_number = list_of_seq_sizes[index_found[0][0]]
+    N50 = list_of_seq_sizes[index_found[0][0]]
     L50 = len((cumulative_sums[cumulative_sums >= half_of_assembly_size]))
 
-    final_list = [N50_number, L50, over_5k, over_25k, total_assembly_size]
+    #calculate #NG50 and LG50 if possiblej
+    
+    genome_prop = int(total_assembly_size) / int(genome_size)
+
+    if genome_prop > .5:
+        list_of_seq_sizes2 = copy.deepcopy(seq_sizes)
+        list_of_seq_sizes2.sort()
+        print(list_of_seq_sizes2)
+        
+        cumulative_sums2 = np.cumsum(list_of_seq_sizes2) 
+        half_of_genome_size = genome_size/2
+       
+        find_NG50_cumulative_sum_index = min(cumulative_sums2[cumulative_sums2 >= \
+            half_of_genome_size])
+
+        NG50_index_found = np.where(cumulative_sums2 == find_NG50_cumulative_sum_index)
+        NG50 = list_of_seq_sizes2[NG50_index_found[0][0]]
+        LG50 = len((cumulative_sums2[cumulative_sums2 >= half_of_genome_size]))
+
+    elif genome_prop <= .5:
+        NG50 = 'N/A'
+        LG50 = 'N/A'
+    
+    print("total assemvly size", total_assembly_size)
+    print('THIS IS THE GENOME SIZE', genome_size)
+    print(genome_prop)
+
+    print("Assemblu STATS")
+    print(N50, L50) 
+    print("Genome STATS")
+    print(NG50, LG50)
+    final_list = [N50, L50, over_5k, over_25k, total_assembly_size]
     return final_list
 
 def quick_read_busco_short_summary(busco_file):
@@ -273,14 +308,19 @@ def calculate_gene_scores(nested_gene_hit_dict):
     return final_gene_dict
 
 
-def calculate_final_gene_count(melted_dict):
+def calculate_final_gene_count(melted_dict, number_CDS_genes):
     """Just counts the number of genes that pass a .90 percent ID acceptance
     threshold.
 
     :melted_dict: TODO
+    number_CDS_genes: Number of CDS genes that were given to this file. Passed
+    in by a command line argument.
     :returns: TODO
 
+
     """
+    final_list = []
+
     gene_count = 0
     
     for genehit, scaffold_dict in melted_dict.items():
@@ -294,6 +334,14 @@ def calculate_final_gene_count(melted_dict):
             gene_count += 1 
         else:
             pass
+    final_list.append(gene_count)
+
+    if number_CDS_genes != None:
+        proportian_genes_captured = int(gene_count)/int(number_CDS_genes)
+        final_list.append(proportian_genes_captured)
+    elif number_CDS_genes == None:
+        final_list.append('N/A')
+
     return gene_count
 
 
@@ -314,7 +362,8 @@ def write_output_file(base_name, assembly_stats, busco_list, gene_count_info,out
     """
     header_string = ["base name", 'N50', 'L50', "scaffold count over 5k" , 
             "scaffold count over 25k", "total assembly size", 'Complete Busco',
-            'Fragmented Busco', 'Missing Busco', "Number CDS genes found"]
+            'Fragmented Busco', 'Missing Busco', "Number CDS genes found",
+            "Proportion of CDS genes found"]
 
     #final_list = [N50_number, L50, over_5k, over_25k, total_assembly_size]
 
@@ -326,7 +375,8 @@ def write_output_file(base_name, assembly_stats, busco_list, gene_count_info,out
     for count in busco_list:
         final_string.append(str(count))
     
-    final_string.append(str(gene_count_info))
+    for values in gene_count_info:
+        final_string.append(str(values))
     
     try:
         os.remove(output_file)
@@ -348,30 +398,63 @@ def plot_genelen_percentcomp(base_name,melted_dict):
     I will then go through and create a scatter plot of all these genes to
     asses their overall quality.
 
-    :melted_dict: TODO
+    :melted_dict: most inner layer has the format of 
+    melted_scaffold_hit_dict[scaffold_name] = [gene_total_len,percentage_found,final_percent_id]
+        
     :returns: TODO
 
     """
+    smalless_gene_len = []
+
     X = []
     Y = []
     output_name = base_name + 'genehit.scatter.pdf'
 
     for genehit, scaffold_dict in melted_dict.items():
         for scaffold_name, protein_info in scaffold_dict.items():
+            
+            
             if float(protein_info[-1]) >= .85 and float(protein_info[1]) < 1.0:
                 X.append(protein_info[0])
                 Y.append(protein_info[1])
                 break
-
+    
+   
+   
     f = plt.figure()
+    #Basics Scatter
     plt.title('Gene Length Vs Percentage Recovered for %s Assembly' % base_name)
     plt.xlabel("Gene Size bp")
     plt.ylabel("Percentage of gene recovered")
-
     plt.scatter(X,Y)
-
     plt.show()
-    f.savefig(output_name, bbox_inches='tight')
+
+    
+    #2d Histogram
+    plt.hist2d(X, Y, (10, 50),cmap=plt.cm.jet)
+    plt.colorbar()
+    plt.xlim(0, 10000)
+    plt.xticks(range(0,10000, 1000),rotation='vertical')
+    plt.show()
+
+    ##Scatter plot with density
+    xy = np.vstack([X,Y])
+    z = gaussian_kde(xy)(xy)
+    fig, ax = plt.subplots()
+    ax.scatter(X, Y, c=z, s=100, edgecolor='')
+    plt.xlim(0, 10000)
+    plt.show()
+
+    
+    
+    #Side by side Histogram
+    create_hist_boxes = range(0,10000,500)
+
+    
+
+
+
+    #f.savefig(output_name, bbox_inches='tight')
 
 
 def create_histogram_of_dups(base_name,melted_dict):
@@ -452,13 +535,13 @@ def get_parser():
     #parser.add_argument('-head','--headers', help="Incluse headers or not in \
     #final output", required=True, dest='head')
 
-    parser.add_argument('-genen','--gene-number', help="Number of genes blasted \
+    parser.add_argument('-genlen','--gene-number', help="Number of genes blasted \
     against in PAF file. Help calculate % genes found ", required=False, dest='gn')
 
     parser.add_argument('-bu','--busco', help="busco short summary output \
             file", required=False, dest='bu')
     
-    parser.add_argument('-bl','--blast', help="Blast output file to asses \
+    parser.add_argument('-mm','--minimap2', help="Minimap 2 PAF output file to asses \
             completness", required=False, dest='bl')
 
     parser.add_argument('-gs','--genome-size', help="estimated genome size to \
@@ -478,7 +561,7 @@ if __name__ == "__main__":
     
     #Read Genome, will always run this.
     fasta_file = read_in_fasta(args.f)
-    create_contig_histogram(args.base,fasta_file)
+    #create_contig_histogram(args.base,fasta_file)
     
     #Calculate assemly stats. N50, and NG50 in case the genome size is included
     if args.gs != None:
@@ -496,13 +579,12 @@ if __name__ == "__main__":
     
     PAF_dict = parse_PAF_fiel(args.bl)
     gene_scaffold_info_dict = calculate_gene_scores(PAF_dict)
-    create_histogram_of_dups(args.base,gene_scaffold_info_dict)
-    plot_genelen_percentcomp(args.base,gene_scaffold_info_dict)
-    final_gene_count = calculate_final_gene_count(gene_scaffold_info_dict)
+    #create_histogram_of_dups(args.base,gene_scaffold_info_dict)
+    #plot_genelen_percentcomp(args.base,gene_scaffold_info_dict)
 
+    final_gene_count = calculate_final_gene_count(gene_scaffold_info_dict,args.gn)
 
-
-    write_output_file(args.base, assembly_stats, final_busc_numbers, final_gene_count, args.o )
+    #write_output_file(args.base, assembly_stats, final_busc_numbers, final_gene_count, args.o )
 
 endtime = datetime.now()
 finaltime = endtime - StartTime 
