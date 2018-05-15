@@ -14,7 +14,6 @@
     :license: LICENSE_NAME, see LICENSE for more details.
 """
 
-
 #import statments. Lets not reinvent the wheel
 from datetime import datetime
 import copy
@@ -28,7 +27,6 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from matplotlib import pyplot as plt
 from scipy.stats import gaussian_kde
-
 
 
 def read_in_fasta(arg1):
@@ -80,6 +78,30 @@ def fasta_assembly_calculations(fasta_dict, genome_size):
 
 
     """
+    
+    def calculate_NX50(scaffold_list, value_to_find):
+        """Sub function to calculate N50 metrics, weather that be NG50 or N50.
+        Since N50 is simly a metric to get to HALF of a value, calculatin it is
+        relativly straigh forward and only requires a list of sizes and the
+        value we're looking for.
+
+        :scaffold_list: TODO
+        :value_to_find: TODO
+        :returns: TODO
+
+        """
+        take_half_size = int(value_to_find)/2
+        scaffold_list.sort()
+
+        cumulative_sums = np.cumsum(scaffold_list)
+        find_cumulative_sum_index = min(cumulative_sums[cumulative_sums >= take_half_size])
+    
+        index_found = np.where(cumulative_sums == find_cumulative_sum_index)
+        NX50_metric = scaffold_list[index_found[0][0]]
+        LX50_metric = len((cumulative_sums[cumulative_sums >= take_half_size]))
+            
+        return (NX50_metric, LX50_metric)
+
     total_assembly_size = 0
     over_5k = 0
     over_25k = 0
@@ -90,7 +112,6 @@ def fasta_assembly_calculations(fasta_dict, genome_size):
         #evidence
         if scaffold_len >= 500:
             seq_sizes.append(scaffold_len)
-            
 
             if scaffold_len >= 25000:
                 over_25k += 1
@@ -102,55 +123,38 @@ def fasta_assembly_calculations(fasta_dict, genome_size):
         else:
             pass
     
+    N50, L50 = calculate_NX50(seq_sizes,total_assembly_size)
     #Calculate N50 using cumulative sum function in numpy
-    list_of_seq_sizes = copy.deepcopy(seq_sizes)
-    list_of_seq_sizes.sort()
-    half_of_assembly_size = total_assembly_size/2
-    cumulative_sums = np.cumsum(list_of_seq_sizes)
+    #list_of_seq_sizes = copy.deepcopy(seq_sizes)
+    #list_of_seq_sizes.sort()
+    #half_of_assembly_size = total_assembly_size/2
+    #cumulative_sums = np.cumsum(list_of_seq_sizes)
 
-    #Smallest number greater than N50 in cumulative sum list
-    find_cumulative_sum_index = min(cumulative_sums[cumulative_sums >= \
-            half_of_assembly_size])
+    ##Smallest number greater than N50 in cumulative sum list
+    #find_cumulative_sum_index = min(cumulative_sums[cumulative_sums >= \
+    #        half_of_assembly_size])
+    #
+    #index_found = np.where(cumulative_sums == find_cumulative_sum_index)
+    #N50 = list_of_seq_sizes[index_found[0][0]]
+    #L50 = len((cumulative_sums[cumulative_sums >= half_of_assembly_size]))
+    #print(N50, L50) 
+
     
-    index_found = np.where(cumulative_sums == find_cumulative_sum_index)
-    N50 = list_of_seq_sizes[index_found[0][0]]
-    L50 = len((cumulative_sums[cumulative_sums >= half_of_assembly_size]))
-
     #calculate #NG50 and LG50 if possiblej
-    
+    # No CLue 
     genome_prop = int(total_assembly_size) / int(genome_size)
-
     if genome_prop > .5:
-        list_of_seq_sizes2 = copy.deepcopy(seq_sizes)
-        list_of_seq_sizes2.sort()
-        print(list_of_seq_sizes2)
-        
-        cumulative_sums2 = np.cumsum(list_of_seq_sizes2) 
-        half_of_genome_size = genome_size/2
-       
-        find_NG50_cumulative_sum_index = min(cumulative_sums2[cumulative_sums2 >= \
-            half_of_genome_size])
-
-        NG50_index_found = np.where(cumulative_sums2 == find_NG50_cumulative_sum_index)
-        NG50 = list_of_seq_sizes2[NG50_index_found[0][0]]
-        LG50 = len((cumulative_sums2[cumulative_sums2 >= half_of_genome_size]))
-
+        #Funciton call above
+        NG50, LG50 = calculate_NX50(seq_sizes,genome_size)
     elif genome_prop <= .5:
+        #If we can't get to 50% can't calculate N50
         NG50 = 'N/A'
         LG50 = 'N/A'
     
-    print("total assemvly size", total_assembly_size)
-    print('THIS IS THE GENOME SIZE', genome_size)
-    print(genome_prop)
-
-    print("Assemblu STATS")
-    print(N50, L50) 
-    print("Genome STATS")
-    print(NG50, LG50)
-    final_list = [N50, L50, over_5k, over_25k, total_assembly_size]
+    final_list = [N50, L50, NG50, LG50, over_5k, over_25k, total_assembly_size]
     return final_list
 
-def quick_read_busco_short_summary(busco_file):
+def quick_read_busco_short_summary(busco_file ):
     """Reads in the BUSCO short summary, and reads in results for compilation
     of all results. Only reads in the short_summart.txt file
 
@@ -168,6 +172,57 @@ def quick_read_busco_short_summary(busco_file):
                 useful_line.append(clean_line)
     return useful_line
 
+def plot_busco_genes(busco_list, base_name):
+    """plot BUSCO genes found. I really do not wish to have to use BUSCOs janky
+    R script, so i'll instead create a quick function to do it for me.
+
+    :busco_list: busco lines read from quick_read_busco_short_summary
+    :returns: TODO
+
+    """
+    X = 4
+    ind = np.arange(X)
+    width = 1.0
+    output_name = base_name +'.busco.metrics.pdf'
+
+
+    single_copy_genes = int(busco_list[2].split()[0])
+    duplicated = int(busco_list[3].split()[0])
+    fragmented_genes = int(busco_list[4].split()[0])
+    missing_busco = int(busco_list[5].split()[0])
+    
+    
+    f = plt.figure()
+    dataset1 = np.array(single_copy_genes)
+    dataset2 = np.array(duplicated)
+    dataset3 = np.array(fragmented_genes)
+    dataset4 = np.array(missing_busco)
+
+    
+
+    p1 = plt.bar(ind,dataset1, width, color='r')
+    p2 = plt.bar(ind, dataset2, width, bottom=dataset1,color='b')
+    p3 = plt.bar(ind,dataset3,width,bottom=dataset2+dataset1, color='g')
+    p4= plt.bar(ind,dataset4, width, bottom=dataset1+dataset2+dataset3, color='y')
+    plt.legend((p1[0], p2[0], p3, p4),
+            ('Singles Copy', 'Duplicated', 'Fractured', 'Missing'))
+
+    plt.ylabel("Number of Busco genes N=1440")
+    plt.title("Busco Gene Discovery Metrics for Assembly %s" %base_name)
+    
+    #Turn off xticks
+    plt.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom=False,      # ticks along the bottom edge are off
+        top=False,         # ticks along the top edge are off
+        labelbottom=False) # labels along the bottom edge are off
+
+    plt.show()
+    f.savefig(output_name, bbox_inches='tight')
+
+    
+
 def process_busco_lines(busco_list):
     """Processes busco lines and returns a list to be used in final combination
     script.
@@ -177,14 +232,14 @@ def process_busco_lines(busco_list):
 
     """
     completed_genes = busco_list[1].split()[0]
-    fragmented_genes = busco_list[3].split()[0]
-    missing_busco = busco_list[4].split()[0]
+    fragmented_genes = busco_list[4].split()[0]
+    missing_busco = busco_list[5].split()[0]
     
     final_busco_list = [completed_genes,fragmented_genes,missing_busco]
     return final_busco_list
 
 
-def parse_PAF_fiel(PAF_file):
+def parse_PAF_file(PAF_file):
     """Reads in PAF file output from Minimap2. Minimap2 is used to Align CDS
     sequences to the contiga.fa. This way I can then create a brief analysis of
     how many genes are present and absent, allowing a far better idea of the
@@ -249,9 +304,6 @@ def parse_PAF_fiel(PAF_file):
 def calculate_gene_scores(nested_gene_hit_dict):
     """calculate PAF scores for each gene. Calculate each hits length and then add it
     to position 0 in the list. This 
-
-
-
 
     genemark-10000714-processed-gene-5.52-mRNA-1 [[], 
     ['genemark-10000714-processed-gene-5.52-mRNA-1', '1320', '4', '1317', '+',
@@ -338,11 +390,11 @@ def calculate_final_gene_count(melted_dict, number_CDS_genes):
 
     if number_CDS_genes != None:
         proportian_genes_captured = int(gene_count)/int(number_CDS_genes)
-        final_list.append(proportian_genes_captured)
+        final_list.append(str(proportian_genes_captured))
     elif number_CDS_genes == None:
         final_list.append('N/A')
 
-    return gene_count
+    return final_list
 
 
 def write_output_file(base_name, assembly_stats, busco_list, gene_count_info,output_file):
@@ -360,7 +412,7 @@ def write_output_file(base_name, assembly_stats, busco_list, gene_count_info,out
     :returns: TODO
 
     """
-    header_string = ["base name", 'N50', 'L50', "scaffold count over 5k" , 
+    header_string = ["base name", 'N50', 'L50','NG50',"LG50","scaffold count over 5k" , 
             "scaffold count over 25k", "total assembly size", 'Complete Busco',
             'Fragmented Busco', 'Missing Busco', "Number CDS genes found",
             "Proportion of CDS genes found"]
@@ -419,8 +471,6 @@ def plot_genelen_percentcomp(base_name,melted_dict):
                 Y.append(protein_info[1])
                 break
     
-   
-   
     f = plt.figure()
     #Basics Scatter
     plt.title('Gene Length Vs Percentage Recovered for %s Assembly' % base_name)
@@ -428,7 +478,6 @@ def plot_genelen_percentcomp(base_name,melted_dict):
     plt.ylabel("Percentage of gene recovered")
     plt.scatter(X,Y)
     plt.show()
-
     
     #2d Histogram
     plt.hist2d(X, Y, (10, 50),cmap=plt.cm.jet)
@@ -445,14 +494,8 @@ def plot_genelen_percentcomp(base_name,melted_dict):
     plt.xlim(0, 10000)
     plt.show()
 
-    
-    
     #Side by side Histogram
     create_hist_boxes = range(0,10000,500)
-
-    
-
-
 
     #f.savefig(output_name, bbox_inches='tight')
 
@@ -547,9 +590,6 @@ def get_parser():
     parser.add_argument('-gs','--genome-size', help="estimated genome size to \
     estimate NG50 ", required=False, dest='gs')
 
-
-
-
     parser.add_argument('-o','--output', help="output file name",\
             required=False, dest='o')
       
@@ -559,30 +599,31 @@ if __name__ == "__main__":
     args = get_parser().parse_args()
     StartTime = datetime.now()
     
-    #Read Genome, will always run this.
-    fasta_file = read_in_fasta(args.f)
+    ##Read Genome, will always run this.
+    #fasta_file = read_in_fasta(args.f)
     #create_contig_histogram(args.base,fasta_file)
-    
-    #Calculate assemly stats. N50, and NG50 in case the genome size is included
-    if args.gs != None:
-        genome_size = decipher_genome_size(args.gs) 
-        assembly_stats = fasta_assembly_calculations(fasta_file,genome_size)
-    else:
-        assembly_stats = fasta_assembly_calculations(fasta_file,None)
+    #
+    ##Calculate assemly stats. N50, and NG50 in case the genome size is included
+    #if args.gs != None:
+    #    genome_size = decipher_genome_size(args.gs) 
+    #    assembly_stats = fasta_assembly_calculations(fasta_file,genome_size)
+    #else:
+    #    assembly_stats = fasta_assembly_calculations(fasta_file,None)
 
     #Read Busco Flad
     if args.bu != None:
         busco_lines = quick_read_busco_short_summary(args.bu)
+        plot_busco_genes(busco_lines,args.base)
         final_busc_numbers = process_busco_lines(busco_lines)
     else:
         busco_lines = None
     
-    PAF_dict = parse_PAF_fiel(args.bl)
-    gene_scaffold_info_dict = calculate_gene_scores(PAF_dict)
+    #PAF_dict = parse_PAF_file(args.bl)
+    #gene_scaffold_info_dict = calculate_gene_scores(PAF_dict)
     #create_histogram_of_dups(args.base,gene_scaffold_info_dict)
     #plot_genelen_percentcomp(args.base,gene_scaffold_info_dict)
 
-    final_gene_count = calculate_final_gene_count(gene_scaffold_info_dict,args.gn)
+    #final_gene_count = calculate_final_gene_count(gene_scaffold_info_dict,args.gn)
 
     #write_output_file(args.base, assembly_stats, final_busc_numbers, final_gene_count, args.o )
 
