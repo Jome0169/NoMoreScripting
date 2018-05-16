@@ -27,6 +27,7 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from matplotlib import pyplot as plt
 from scipy.stats import gaussian_kde
+import logging
 
 
 def read_in_fasta(arg1):
@@ -218,7 +219,7 @@ def plot_busco_genes(busco_list, base_name):
         top=False,         # ticks along the top edge are off
         labelbottom=False) # labels along the bottom edge are off
 
-    plt.show()
+    #plt.show()
     f.savefig(output_name, bbox_inches='tight')
 
     
@@ -397,7 +398,8 @@ def calculate_final_gene_count(melted_dict, number_CDS_genes):
     return final_list
 
 
-def write_output_file(base_name, assembly_stats, busco_list, gene_count_info,output_file):
+def write_output_file(base_name, assembly_stats, busco_list, gene_count_info,
+        head_flag, output_file):
     """This function writes all De-Novo information to a particular output
     file. It writes everything as a single line with the goal of all lines
     from multiple assemblies then being catted together to make analysis
@@ -412,6 +414,7 @@ def write_output_file(base_name, assembly_stats, busco_list, gene_count_info,out
     :returns: TODO
 
     """
+
     header_string = ["base name", 'N50', 'L50','NG50',"LG50","scaffold count over 5k" , 
             "scaffold count over 25k", "total assembly size", 'Complete Busco',
             'Fragmented Busco', 'Missing Busco', "Number CDS genes found",
@@ -431,13 +434,20 @@ def write_output_file(base_name, assembly_stats, busco_list, gene_count_info,out
         final_string.append(str(values))
     
     try:
+        #Should be a log message here.
         os.remove(output_file)
     except OSError:
         pass
 
     with open(output_file, 'a+') as f:
-        #f.write(','.join(header_string))
-        #f.write('\n')
+        
+        if head_flag == True:
+            f.write(','.join(header_string))
+            f.write('\n')
+        else:
+            print("No Header Inforation will be added to output")
+            pass
+
         f.write(','.join(final_string))
         f.write('\n')
 
@@ -460,7 +470,7 @@ def plot_genelen_percentcomp(base_name,melted_dict):
 
     X = []
     Y = []
-    output_name = base_name + 'genehit.scatter.pdf'
+    output_name = base_name + '.genehit.scatter.pdf'
 
     for genehit, scaffold_dict in melted_dict.items():
         for scaffold_name, protein_info in scaffold_dict.items():
@@ -472,19 +482,21 @@ def plot_genelen_percentcomp(base_name,melted_dict):
                 break
     
     f = plt.figure()
-    #Basics Scatter
-    plt.title('Gene Length Vs Percentage Recovered for %s Assembly' % base_name)
-    plt.xlabel("Gene Size bp")
-    plt.ylabel("Percentage of gene recovered")
-    plt.scatter(X,Y)
-    plt.show()
-    
-    #2d Histogram
-    plt.hist2d(X, Y, (10, 50),cmap=plt.cm.jet)
-    plt.colorbar()
-    plt.xlim(0, 10000)
-    plt.xticks(range(0,10000, 1000),rotation='vertical')
-    plt.show()
+    ##Basics Scatter
+    #plt.title('Gene Length Vs Percentage Recovered for %s Assembly' % base_name)
+    #plt.xlabel("Gene Size bp")
+    #plt.ylabel("Percentage of gene recovered")
+    #plt.scatter(X,Y)
+    ##plt.show()
+    #f.savefig(output_name, bbox_inches='tight')
+
+    ##2d Histogram
+    #plt.hist2d(X, Y, (10, 50),cmap=plt.cm.jet)
+    #plt.colorbar()
+    #plt.xlim(0, 10000)
+    #plt.xticks(range(0,10000, 1000),rotation='vertical')
+    ##plt.show()
+    #f.savefig(output_name, bbox_inches='tight')
 
     ##Scatter plot with density
     xy = np.vstack([X,Y])
@@ -492,13 +504,12 @@ def plot_genelen_percentcomp(base_name,melted_dict):
     fig, ax = plt.subplots()
     ax.scatter(X, Y, c=z, s=100, edgecolor='')
     plt.xlim(0, 10000)
-    plt.show()
+    #plt.show()
 
     #Side by side Histogram
     create_hist_boxes = range(0,10000,500)
 
-    #f.savefig(output_name, bbox_inches='tight')
-
+    f.savefig(output_name, bbox_inches='tight')
 
 def create_histogram_of_dups(base_name,melted_dict):
     """Many genes have multiple hits. I want to now go through and create a
@@ -510,7 +521,7 @@ def create_histogram_of_dups(base_name,melted_dict):
     :returns: TODO
 
     """
-    output_name = base_name + 'gene.duplication.hist.pdf'
+    output_name = base_name + '.gene.duplication.hist.pdf'
     count_list = []
 
     for key, value in melted_dict.items():
@@ -526,7 +537,7 @@ def create_histogram_of_dups(base_name,melted_dict):
     plt.ylabel("Frequency of Genes being Found")
 
     plt.hist(count_list,bins=bins,alpha=.5,edgecolor='black', linewidth=1.0)
-    plt.show()
+    #plt.show()
     f.savefig(output_name, bbox_inches='tight')
 
 
@@ -575,11 +586,11 @@ def get_parser():
     parser.add_argument('-base','--base-name', help="Base name of the file to \
     be used to the first cell of the final output.", required=True, dest='base')
     
-    #parser.add_argument('-head','--headers', help="Incluse headers or not in \
-    #final output", required=True, dest='head')
+    parser.add_argument('-head','--headers', help="Incluse headers or not in \
+    final output", action='store_true', required=False, dest='head')
 
-    parser.add_argument('-genlen','--gene-number', help="Number of genes blasted \
-    against in PAF file. Help calculate % genes found ", required=False, dest='gn')
+    parser.add_argument('-genelen','--gene-number', help="Number of genes blasted \
+    against in PAF file. Help calculate percentage genes found ", required=False, dest='gn')
 
     parser.add_argument('-bu','--busco', help="busco short summary output \
             file", required=False, dest='bu')
@@ -590,7 +601,7 @@ def get_parser():
     parser.add_argument('-gs','--genome-size', help="estimated genome size to \
     estimate NG50 ", required=False, dest='gs')
 
-    parser.add_argument('-o','--output', help="output file name",\
+    parser.add_argument('-o','--output', help="Output file name",\
             required=False, dest='o')
       
     return parser
@@ -599,33 +610,35 @@ if __name__ == "__main__":
     args = get_parser().parse_args()
     StartTime = datetime.now()
     
-    ##Read Genome, will always run this.
-    #fasta_file = read_in_fasta(args.f)
-    #create_contig_histogram(args.base,fasta_file)
-    #
-    ##Calculate assemly stats. N50, and NG50 in case the genome size is included
-    #if args.gs != None:
-    #    genome_size = decipher_genome_size(args.gs) 
-    #    assembly_stats = fasta_assembly_calculations(fasta_file,genome_size)
-    #else:
-    #    assembly_stats = fasta_assembly_calculations(fasta_file,None)
+    #Read Genome, will always run this.
+    fasta_file = read_in_fasta(args.f)
+    create_contig_histogram(args.base,fasta_file)
+    
+    #Calculate assemly stats. N50, and NG50 in case the genome size is included
+    if args.gs != None:
+        genome_size = decipher_genome_size(args.gs) 
+        assembly_stats = fasta_assembly_calculations(fasta_file,genome_size)
+    else:
+        assembly_stats = fasta_assembly_calculations(fasta_file,None)
 
     #Read Busco Flad
     if args.bu != None:
         busco_lines = quick_read_busco_short_summary(args.bu)
-        plot_busco_genes(busco_lines,args.base)
+        #plot_busco_genes(busco_lines,args.base)
         final_busc_numbers = process_busco_lines(busco_lines)
     else:
         busco_lines = None
     
-    #PAF_dict = parse_PAF_file(args.bl)
-    #gene_scaffold_info_dict = calculate_gene_scores(PAF_dict)
-    #create_histogram_of_dups(args.base,gene_scaffold_info_dict)
-    #plot_genelen_percentcomp(args.base,gene_scaffold_info_dict)
+    PAF_dict = parse_PAF_file(args.bl)
+    gene_scaffold_info_dict = calculate_gene_scores(PAF_dict)
+    create_histogram_of_dups(args.base,gene_scaffold_info_dict)
+    plot_genelen_percentcomp(args.base,gene_scaffold_info_dict)
+    final_gene_count = calculate_final_gene_count(gene_scaffold_info_dict,args.gn)
 
-    #final_gene_count = calculate_final_gene_count(gene_scaffold_info_dict,args.gn)
+    print(args.head)
 
-    #write_output_file(args.base, assembly_stats, final_busc_numbers, final_gene_count, args.o )
+    write_output_file(args.base, assembly_stats, final_busc_numbers,
+            final_gene_count, args.head ,args.o )
 
 endtime = datetime.now()
 finaltime = endtime - StartTime 
