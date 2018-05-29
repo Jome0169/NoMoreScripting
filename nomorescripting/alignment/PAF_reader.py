@@ -79,7 +79,6 @@ def parse_PAF_file(PAF_file):
         for line in f:
             clean_line = line.strip().split('\t')
             if len(clean_line) <= 12:
-                print(len(clean_line))
                 #Break if not PAF File
                 print("Incorrect ")
                 return None
@@ -116,6 +115,35 @@ def calculate_gene_scores(nested_gene_hit_dict):
  
 
     """
+    
+    #Below it the filter low mappign quality command. THis has been deprecated
+    #as i've realize that filtereing by mapping quality doesn't make send when
+    #looking for presence abscene data
+    #def filter_low_mapping_qual(scaffold_lvl_dict):
+    #    """Minimap2 asssigns a mapping quality metric when it creates
+    #    algignemtns. This can be useful when trying to identify canidate CDS
+    #    geens that aligned anc actually perform well. Therefore, this functiona
+    #    aims to clear out any alignemtsn with less than a .999 certainy in
+    #    alignment.
+
+    #    :scaffold_lvl_dict: TODO
+    #    :returns: TODO
+
+    #    """
+    #    edited_scaffold_lvl_dict = copy.deepcopy(scaffold_lvl_dict)
+    #    cleaned_dict_no_low_map = {}
+
+    #    for scaffold_name, hits in edited_scaffold_lvl_dict.items():
+    #        good_hits = []
+    #        for list1 in hits:
+    #            if int(list1[11]) >= 30:
+    #                good_hits.append(list1)
+    #            elif int(list1[11]) < 30:
+    #                pass
+    #        cleaned_dict_no_low_map[scaffold_name] = good_hits
+
+    #    return cleaned_dict_no_low_map
+
 
     def digest_scaffold_dict(scaffold_lvl_dict):
         """Takes in scaffold dict, and reports back the melted list with the
@@ -128,6 +156,7 @@ def calculate_gene_scores(nested_gene_hit_dict):
         [gene_total_len,percentage_found,final_percent_ID]
 
         """
+
         melted_scaffold_hit_dict = {}
         for scaffold_name, hits in scaffold_lvl_dict.items():
             number_hits = len(hits)
@@ -142,15 +171,20 @@ def calculate_gene_scores(nested_gene_hit_dict):
                 total_len_found += cal_len_hit
                 gene_total_len = int(list1[1])
                 alignment_ID += alignment_ID_list
+            
+            if gene_total_len == 0 or total_len_found ==0 or alignment_ID ==0:
+                pass
+            else:
+                final_percent_ID = alignment_ID/number_hits 
+                percentage_found = total_len_found
 
-            final_percent_ID = alignment_ID/number_hits 
-            percentage_found = total_len_found/gene_total_len
+                melted_scaffold_hit_dict[scaffold_name] = [gene_total_len,percentage_found,final_percent_ID]
 
-            melted_scaffold_hit_dict[scaffold_name] = [gene_total_len,percentage_found,final_percent_ID]
-        
+
         return melted_scaffold_hit_dict
             
     
+    #Maing function call
     if nested_gene_hit_dict == None:
         return None
     else:
@@ -158,9 +192,30 @@ def calculate_gene_scores(nested_gene_hit_dict):
         logging.info("About to melt PAF dict and report back gene_len, \
                 percentage_found, and final_percent_ID")
         for gene_hit, value in nested_gene_hit_dict.items():
-
+            #high_qual_mapping_dict = filter_low_mapping_qual(value[0])
             melted_dict = digest_scaffold_dict(value[0])
             final_gene_dict[gene_hit] = melted_dict
     
     logging.info("Finishing dictionary melt")
     return final_gene_dict
+
+
+def hist_from_list(hist_list,title ):
+    """Analysis of alignments is a huge deal. This small function just
+    createas a basic histogram in order to allow me to visualzie the
+    distribution of certain values more easily.
+    :output_file: Creates a histogram from list of values
+
+    """
+    logging.info("Plotting List")
+    bin_number = 100
+
+    fig, ax = plt.subplots()    
+
+    ax.set_title('%s  n=%s' \
+            % (title,len(hist_list)))
+
+    n, bins, patches = ax.hist(hist_list, bin_number, density=1)
+    plt.show()
+
+
