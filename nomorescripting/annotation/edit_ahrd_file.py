@@ -210,13 +210,8 @@ if __name__ == "__main__":
     write_output(ahrd_dict, args.o)
 
    
-
-
-
 #Speed Things
 EndTime = datetime.now()
 FinalTime = EndTime - StartTime
 
 print ("Total Time %s" % (FinalTime))
-
-

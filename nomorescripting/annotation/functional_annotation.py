@@ -175,32 +175,3 @@ if __name__ == "__main__":
     read_gff_file = read_in_gff(args.g)
     edit_gff_list(gff_lists,annotation_key)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

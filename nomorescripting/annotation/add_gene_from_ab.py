@@ -3,7 +3,7 @@ import getopt
 import sys
 import os
 import re
-import copy
+import copy 
 from sys import argv
 from datetime import datetime
 import argparse

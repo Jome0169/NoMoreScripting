@@ -30,36 +30,6 @@ def only_mRNA(gff3_list):
     return mRNA_items
 
 
-
-###Think about this function more.
-def clobber_mRNA_list(mRNA_list):
-    """Takes in the mRNA list, and digest it so the return is a key value
-    format where the gene will be the key, and the value will be other gff3
-    hits.
-
-    :mRNA_list: TODO
-    :returns: TODO
-
-    """
-
-
-def print_cheker(thing_print):
-    """I spend alot of time doing print check on things. This is a way to try
-    and automate all the thins I end up having to print check. 
-
-    :thing_print: TODO
-    :returns: TODO
-
-    """
-
-    ID_type = type(thing_print)
-
-    if ID_type == "list":
-        print(thing_print)
-
-
-
-
 def read_blat_PSL(PSL_file):
     """Reads in PSL file. Reads this in to a list object, and returns this list
     for later processing. 
@@ -125,6 +95,74 @@ def nest_target_gene_dict(query_dict, PSL_list):
 
     return query_dict 
 
+
+def find_splitgenes(query_dict):
+    """Takes in query dict and looks for geneA that might be split in between
+    two different scaffolds. If this function finds evidence for this, it will
+    generate a false string taht has the proper coordinates.
+    
+    gala12g28350    339     2       182
+    gala12g28350    339     182     339
+
+    :query_dict: TODO
+    :returns: TODO
+
+    """
+    x_dict = copy.deepcopy(query_dict)
+    split_gene_dict = {}
+    for key,val in x_dict.items():
+        
+        get_key = val.keys()
+        if len(get_key) == 2:
+            #Creates iterator pairs for easy regtrieval with lambda
+            x = list((itertools.combinations(get_key,2)))
+            
+            #Lambda function. Reports back query hit info
+            query_hits = lambda dict1, key1: dict1[key1][0][10:13]
+
+            gene_hit1 = (query_hits(val,x[0][0]))
+            gene_hit2 = (query_hits(val,x[0][1]))
+
+            if gene_hit1[2] == gene_hit2[1]:
+
+                gene_mismatch = lambda dict1, key1: dict1[key1][0][1]
+                
+                gene1_mismatch = gene_mismatch(val,x[0][0])
+                gene2_mismatch = gene_mismatch(val,x[0][1])
+
+                final_scaffold_name = x[0][0] + '____' + x[0][1]
+                final_query_len = gene_hit1[0]
+                final_query_start = gene_hit1[1]
+                final_query_end = gene_hit2[2]
+                final_gene_mismatch = (int(gene1_mismatch[0]) + int(gene2_mismatch[0]))
+                
+                fake_list = [None] * 15
+
+                fake_list[1] = str(final_gene_mismatch)
+                fake_list[10] = str(final_query_len)
+                fake_list[11] = str(final_query_start)
+                fake_list[12] = str(final_query_end)
+
+                mini_dict_scaffold = {final_scaffold_name:[fake_list]}
+                
+                split_gene_dict[key] = mini_dict_scaffold
+
+            else:
+                split_gene_dict[key] = val
+
+                
+        else:
+            #Genes with 2+ hits are too messy and don't work well, and we don't
+            #care about genes with just a single hit
+            split_gene_dict[key] = val
+    
+    #for key,val in split_gene_dict.items():
+    #    print(key)
+    #    print(val)
+    #    input()
+    return split_gene_dict
+
+
 def clobber_inner_list(neseted_query_dict):
     """Takes in nested PSL dictionary, and clobbers the most inner list into a
     string that can then actualyy be used to graph the overall amount of CDS
@@ -138,6 +176,41 @@ def clobber_inner_list(neseted_query_dict):
     :returns: Something nice
 
     """
+
+    def clobber_inner_inner(nested_list):
+        """Sometimes a single gene will be split on the same scaffold due to
+        h
+
+        intronic sequence. this inner function takes a list, and if the lsit
+        len > 1, it takes the average of PID and reports back an updated
+        alignment length. 
+
+        :nested_list): [[length_of_query,alignment_length, percent_ID,],
+        [length_of_query,alignment_length, percent_ID, ]]
+
+
+        :returns: TODO
+        single: [length_of_query,alignment_length, percent_ID, ]
+
+
+        """
+        if len(nested_list) >= 2:
+            gene_len = list(map(lambda x: int(x[0]),nested_list))
+            avg_gene_len = sum(gene_len)/len(gene_len)
+
+            algn_vals = list(map(lambda x: int(x[1]),nested_list))
+            avg_algn_vals = sum(algn_vals)
+            
+            PID_vals = list(map(lambda x: float(x[2]),nested_list))
+            average_PID = float(sum(PID_vals))
+            
+            final_clobbered_list = [[avg_gene_len, avg_algn_vals,average_PID]]
+            nested_list = final_clobbered_list
+
+        elif len(nested_list) == 1:
+            pass
+        return nested_list 
+
     #copying and editing dict gets werid, so make a deepcopy
     copy_dict = copy.deepcopy(neseted_query_dict)  
     
@@ -161,7 +234,10 @@ def clobber_inner_list(neseted_query_dict):
                 reformulate_list = [length_of_query,alignment_length, percent_ID, ]
                 reformulat_nested_list.append(reformulate_list)
             
-            nested_dict[scaffold] = reformulat_nested_list
+            #Check for gene split in same scaffold
+            sam_scaf_multi_hit  = clobber_inner_inner(reformulat_nested_list) 
+            nested_dict[scaffold] = sam_scaf_multi_hit 
+
     return copy_dict
 
 def seperate_into_classes(melted_dict):
@@ -234,7 +310,6 @@ def write_output_table(gene_dict, group, output_name):
                             str(i[0]), str(i[1]), str(i[2])]
                     f.write(','.join(final_list))
                     f.write('\n')
-                    print(final_list)
 
 
 
@@ -267,29 +342,15 @@ if __name__ == '__main__':
     #Edits given list
     nest_target_gene_dict(query_dict, PSL_list)
     
-    #Digest inner list 
-    for key,val in query_dict.items():
-        if len(val) >= 2:
-            print(key)
-            for thing, other in val.items():
-                print(thing)
-                for i in other:
-                    print('\t'.join(i))
-            input()
-
-
-
-    melted_dict = clobber_inner_list(query_dict)
-
+    #Search for genes split of 2 scaffolds    
+    fixed_split_query = find_splitgenes(query_dict)
+    
+    #Calculate PID, genelen
+    melted_dict = clobber_inner_list(fixed_split_query)
     single_gene_dict,mutli_gene_dict = seperate_into_classes(melted_dict)
 
-    
-    
-
-
-
-    #write_output_table(single_gene_dict, "single", args.o)
-    #write_output_table(mutli_gene_dict, "multi", args.o)
+    write_output_table(single_gene_dict, "single", args.o)
+    write_output_table(mutli_gene_dict, "multi", args.o)
 
     #gotta fix these plots, and clean them up
     #plot_percent_id(single_gene_dict)
