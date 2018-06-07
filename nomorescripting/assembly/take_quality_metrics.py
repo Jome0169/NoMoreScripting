@@ -86,7 +86,6 @@ def fasta_assembly_calculations(fasta_dict, genome_size):
 
     TODO: THROW ERROR IF ASSEMBLY IS LESS THAN halg the genome size
 
-
     """
     
     def calculate_NX50(scaffold_list, value_to_find):
@@ -210,12 +209,10 @@ def plot_busco_genes(busco_list, base_name):
     width = 1.0
     output_name = base_name +'.busco.metrics.pdf'
 
-
     single_copy_genes = int(busco_list[2].split()[0])
     duplicated = int(busco_list[3].split()[0])
     fragmented_genes = int(busco_list[4].split()[0])
     missing_busco = int(busco_list[5].split()[0])
-    
     
     f = plt.figure()
     dataset1 = np.array(single_copy_genes)
@@ -361,7 +358,6 @@ def calculate_gene_scores(nested_gene_hit_dict):
     maker-10000558-snap-gene-0.10-mRNA-1 {'NODE_115882_length_1094_cov_3.855199': [81, 0.7901234567901234, 1.0], 
     'NODE_69614_length_1708_cov_5.135727': [81, 0.7530864197530864, 0.819672131147541]}
  
-
     """
     def find_possible_scaf_split(scaffold_lvl_dict):
         """takes in a scaffold level deict and looks for overlap -- or 500 bp
@@ -964,33 +960,23 @@ def get_parser():
             bunch of assembly metrics from a de novo assembly including BUSCO,\
             protein blast, and estimated genome size and reports back a series\
             of inforamtive number in csv form")
-    
     #Arguments 
     parser.add_argument('-f', '--fasta', help="Genome Assembly to take stats \
             of", required=True, dest='f')
-
     parser.add_argument('-base','--base-name', help="Base name of the file to \
     be used to the first cell of the final output.", required=True, dest='base')
-    
     parser.add_argument('-head','--headers', help="Incluse headers or not in \
     final output", action='store_true', required=False, dest='head')
-
     parser.add_argument('-genelen','--gene-number', help="Number of genes blasted \
     against in PAF file. Help calculate percentage genes found ", required=False, dest='gn')
-
     parser.add_argument('-bu','--busco', help="busco short summary output \
             file", required=False, dest='bu')
-    
     parser.add_argument('-mm','--minimap2', help="Minimap 2 PAF output file to asses \
             completness", required=False, dest='mm')
-
     parser.add_argument('-gmap','--gmap-psl', help="gmap file output for cds seq \
             completness", required=False, dest='gmap')
-
-
     parser.add_argument('-gs','--genome-size', help="estimated genome size to \
-    estimate NG50 ", required=False, dest='gs')
-
+            estimate NG50 ", required=False, dest='gs')
     parser.add_argument('-o','--output', help="Output file name",\
             required=False, dest='o')
       
@@ -1059,23 +1045,22 @@ if __name__ == "__main__":
         #Melt for PID and gene len capture
         gmap_melted_dict = gmap_clobber_inner_list(gmap_fixed_split_genes)
 
-        single_gene_dict,mutli_gene_dict = seperate_into_classes(gmap_melted_dict)
+
 
         #Plot found genes
         #plot_histogram_of_dups(args.base,gene_scaffold_info_dict)
-        #plot_genelen_percentcomp(args.base,gene_scaffold_info_dict)
+        plot_genelen_percentcomp(args.base,gene_scaffold_info_dict)
 
 
 
-        #plot_histogram_of_dups(args.base,gmap_melted_dict)
+        single_gene_dict,mutli_gene_dict = seperate_into_classes(gmap_melted_dict)
+
         final_gene_count = calculate_final_gene_count(single_gene_dict, \
                 mutli_gene_dict,args.gn)
 
     elif args.mm == None and args.gmap == None:
-
-        logging.info("No CDS alignment file included. CDS capture will not be \
-                reported")
-        final_gene_count = calculate_final_gene_count(None,None)
+        logging.info("No CDS alignment file included. CDS capture will not be reported")
+        final_gene_count = calculate_final_gene_count(None,None,None)
 
     #Write output
     write_output_file(args.base, assembly_stats, final_busc_numbers,
