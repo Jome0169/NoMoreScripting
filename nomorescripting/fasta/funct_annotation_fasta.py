@@ -4,15 +4,11 @@
 """
 
 from datetime import datetime
-from read_gff import read_in_gff
 from sys import argv
 import copy
 import argparse
 import sys
 import os
-
-
-
 
 def scaf_header_load(fasta_file):
     """read in fasta file
@@ -141,8 +137,11 @@ def read_in_gff(gff_file, struc, prot_file):
         gff_cds[0][5] = total_seq_len
         
         gene_name = gff_cds[0][8].replace('ID=','').split(';')[0].split(':')[0]
-        
+        print(gff_cds[0][8]) 
+        print(gene_name)
+        input()
         horrible_mRNA_len = len(prot_file[gene_name])
+
         gff_cds[0][5] = horrible_mRNA_len
 
 
@@ -170,8 +169,10 @@ def read_ahrd_csv(ahrd_file):
                 pass
             elif "REVERSE" in clean_line[-1] or 'FORWARD' in clean_line[-1]:
                 pass
+            elif clean_line == ['']:
+                pass
             else:
-                annotation_key[clean_line[0]] = clean_line[-1]
+                annotation_key[clean_line[0]] = clean_line[3]
 
     return annotation_key
 
@@ -188,7 +189,7 @@ def create_gff3_string(ID_Name,gff3_dict, struct):
     :returns: Chr1:6915-8666 REVERSE LENGTH=738 
 
     """
-
+   
     retrieve_gff3_annot = gff3_dict[ID_Name]
 
     start_loc = str(retrieve_gff3_annot[3])
@@ -221,9 +222,15 @@ def create_gff3_string(ID_Name,gff3_dict, struct):
 
 
 
-def format_fasta_header(protein_dict, ahrd_dict, fasta_dict, gff3_dict, struc):
-    """TODO: Docstring for format_fasta_header.
+def format_fasta_header(protein_dict, ahrd_dict, fasta_dict, gff3_dict, struc,
+        location_flag):
+    """Takes in all data types, and generates a final string to repalce the old
+    string. 
 
+
+    Wed Jun 20 14:01:19 EDT 2018: Updated this function to report locaiton
+    information optinolly this assists with genomes that currently do not have
+    a chromosome level assembly.
     :protein_dict: TODO
     :ahrd_dict: TODO
     :returns: TODO
@@ -238,13 +245,25 @@ def format_fasta_header(protein_dict, ahrd_dict, fasta_dict, gff3_dict, struc):
             
             #call to creat_gff3_string function. returns
             #Chr1:6915-8666 REVERSE LENGTH=738 
-            info_string = create_gff3_string(gene_name,gff3_dict, struc)
-            
-            functional_string = '>' + gene_name + ' ' + '|' + ' ' \
-            + functional_info + ' ' + '|' + ' ' + info_string + ' ' + '|' + ' ' 
+            if location_flag == True:
+                #Get Location info and Len Info
+                info_string = create_gff3_string(gene_name,gff3_dict, struc)
+                
+                functional_string = '>' + gene_name + ' ' + '|' + ' ' \
+                + functional_info + ' ' + '|' + ' ' + info_string + ' ' + '|' + ' ' 
 
-            func_String_Aed = functional_string 
-            final_dict[gene_name] = func_String_Aed
+                func_String_Aed = functional_string 
+                final_dict[gene_name] = func_String_Aed
+            
+            elif location_flag == False:
+                #Create String
+                functional_string = '>' + gene_name + ' ' + '|' + ' ' \
+                + functional_info + ' ' + '|' + ' ' 
+                
+                func_String_Aed = functional_string 
+                final_dict[gene_name] = func_String_Aed
+
+
 
     for header, seqq in fasta_dict.items():
 
@@ -258,18 +277,6 @@ def format_fasta_header(protein_dict, ahrd_dict, fasta_dict, gff3_dict, struc):
             print(seqq)
 
 
-#Original command line calls
-#prot_or_nuc = argv[4]
-#protein_dict_info = scaf_header_load(argv[1])
-#fasta_seq_dict = store_fasta_info(argv[1])
-#
-#gff_mrna_info = read_in_gff(argv[3],argv[4], fasta_seq_dict)
-#protein_dict_info = scaf_header_load(argv[1])
-#annotation_key = read_ahrd_csv(argv[2])
-#
-#format_fasta_header(protein_dict_info,annotation_key,\
-#        fasta_seq_dict,gff_mrna_info, argv[4])
-
 def get_parser():
     parser = argparse.ArgumentParser(description='Reads in AHRD file and fasta \
             file and adds functional annotation to the FASTA. ABides by the \
@@ -277,33 +284,42 @@ def get_parser():
 
     parser.add_argument('-f','--fasta', help='fasta file to add functional annotation', \
             required=True, dest='f')
-    parser.add_argument('-ahrd','--ahrd', help='prefix to ',\
-            required=True,dest='ahrd') 
+    parser.add_argument('-ahrd','--ahrd', help='AHRD file',\
+            required=True,dest='rd') 
     parser.add_argument('-g','--gff', help='gff file to read and use', \
-            required=True, dest='g')
+            required=False, dest='g')
     parser.add_argument('-t','--type', help='what type of func file, optios are \
             t for trnascripts n for cds and p for protein', \
             required=True, dest='t')
+
+    parser.add_argument('-l','--loc', help='Location added into genome name Yes|No', \
+            required=False, action='store_true', dest='l')
+
+
 
     args = vars(parser.parse_args())    
     return parser
 
 
-
-
 if __name__ == "__main__":
     args = get_parser().parse_args()
-    read_gff_file = read_in_gff(args.g)
-
-    prot_or_nuc = args.t
+    
+    #ID what we're doing - protein or nuc
+    prot_or_nuc = args.t 
+    #Load only headers for renaming
     protein_dict_info = scaf_header_load(args.f)
+    #Load Actual Fasta sequence
     fasta_seq_dict = store_fasta_info(args.f)
     
-    gff_mrna_info = read_in_gff(args.g,args.t, fasta_seq_dict)
-    annotation_key = read_ahrd_csv(args.ahrd_file)
+    if args.g != None:
+        gff_mrna_info = read_in_gff(args.g,args.t, fasta_seq_dict)
+    else:
+        gff_mrna_info = None
+
+    annotation_key = read_ahrd_csv(args.rd)
     
     format_fasta_header(protein_dict_info,annotation_key,\
-            fasta_seq_dict,gff_mrna_info, args.t)
+            fasta_seq_dict,gff_mrna_info, args.t,args.l)
 
 
 

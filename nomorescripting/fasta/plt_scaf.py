@@ -100,6 +100,7 @@ def hist_plot_ns(chrom_len_dict, ns_window_dict, window_size, scaffold_list):
             #plt.xticks(np.arange(min(x_pos), max(x_pos)+1, 1))
             creat_file_name = chrom + '_plot.pdf'
             plt.savefig(creat_file_name)
+            plt.gcf().clear()
             #plt.show()
    
     #If given a list to work with, only pring and write the given ones
@@ -134,7 +135,7 @@ def hist_plot_ns(chrom_len_dict, ns_window_dict, window_size, scaffold_list):
                 creat_file_name = chrom + '_plot.pdf'
                 plt.savefig(creat_file_name)
                 #Clear the plot
-                plt.clf()
+                plt.clear()
             else:
                 pass
 

@@ -11,10 +11,16 @@
 
     :copyright: (c) 2018 by YOUR_NAME.
     :license: LICENSE_NAME, see LICENSE for more details.
+
+
+
+   NOTE  Wed Jun 20 16:22:02 EDT 2018: THis thing needs to be edited so it cna
+   work with NON chromsome level assembies, as well as increase its general
+   flexability
 """
 
 from datetime import datetime
-from read_gff import read_in_gff
+from readgff import read_in_gff
 from sys import argv
 import copy
 import argparse
@@ -63,8 +69,20 @@ def extract_gene_mrna_names(gff_list, prefix_name, output_file):
                 new_format = BaseName + str(take_chrom_num) + 'G' + str(mRNACounter).zfill(int(6)) + '.1'
 
                 old_name_raw = real_name.split('=')
-                print(real_name,'\t',new_format)
+
+
+                if output_file == None: 
+                    print(old_name_raw[0],'\t',new_format)
+                elif output_file != None:
+                    with open(output_file, 'a+') as f:
+                        create_final_string = str(old_name_raw[0] + '\t' + new_format)
+                        f.write(create_final_string)
+                        f.write('\n')
+
                 mRNACounter += 10
+
+
+
             elif item[2] == 'gene':
 
                 take_chrom_num = item[0].replace('Chr', '')
@@ -85,11 +103,13 @@ def extract_gene_mrna_names(gff_list, prefix_name, output_file):
                 new_format = BaseName + str(take_chrom_num) + 'G' + str(mRNACounter).zfill(int(6))
                 
                 old_name_raw = real_name.split('=')
+
                 if output_file == None: 
                     print(old_name_raw[1],'\t',new_format)
                 elif output_file != None:
                     with open(output_file, 'a+') as f:
-                        f.wite(old_name_raw[1],'\t',new_format)
+                        create_final_string = str(old_name_raw[1] + '\t' + new_format)
+                        f.write(create_final_string)
                         f.write('\n')
 
 
@@ -108,10 +128,9 @@ def get_parser():
     parser.add_argument('-pre','--prefix', help='prefix to ',\
             required=True,dest='pre') 
     parser.add_argument('-o','--output', help='output file to write to', \
-            required=True, dest='o')
+            required=False, dest='o')
     args = vars(parser.parse_args())    
     return parser
-
 
 
 
@@ -122,7 +141,4 @@ if __name__ == "__main__":
         extract_gene_mrna_names(read_gff_file, args.pre, None)
     else:
         extract_gene_mrna_names(read_gff_file, args.pre, args.o)
-
-
-
 

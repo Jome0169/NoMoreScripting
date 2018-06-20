@@ -12,7 +12,7 @@
 
 from sys import argv
 from readgff import read_in_gff
-
+import argparse
 
 def read_mapping_file(map_file):
     """TODO: Docstring for read_mapping_file.
@@ -135,10 +135,14 @@ def get_parser():
     parser.add_argument('-m','--map', help='mapping file to read', \
             required=True, dest='m')
 
+    args = vars(parser.parse_args())    
+    return parser
+
+
 
 if __name__ == "__main__":
     args = get_parser().parse_args()
    
     gff_file = read_in_gff(args.g)
     map_dict = read_mapping_file(args.m)
-    fix_function(gff_list,map_dict)
+    fix_function(gff_file,map_dict)

@@ -978,7 +978,7 @@ def get_parser():
     parser.add_argument('-gs','--genome-size', help="estimated genome size to \
             estimate NG50 ", required=False, dest='gs')
     parser.add_argument('-o','--output', help="Output file name",\
-            required=False, dest='o')
+            required=True, dest='o')
       
     return parser
 
@@ -1025,8 +1025,8 @@ if __name__ == "__main__":
         single_gene_dict,mutli_gene_dict = seperate_into_classes(nested_paf_file)
         
         #Plot found genes
-        #plot_histogram_of_dups(args.base,gene_scaffold_info_dict)
-        #plot_genelen_percentcomp(args.base,gene_scaffold_info_dict)
+        plot_histogram_of_dups(args.base,gene_scaffold_info_dict)
+        plot_genelen_percentcomp(args.base,gene_scaffold_info_dict)
         
         #caculate final # of genes found with percentage cut off >.6
         final_gene_count = calculate_final_gene_count(nested_paf_file,args.gn)
@@ -1045,16 +1045,11 @@ if __name__ == "__main__":
         #Melt for PID and gene len capture
         gmap_melted_dict = gmap_clobber_inner_list(gmap_fixed_split_genes)
 
-
-
         #Plot found genes
         #plot_histogram_of_dups(args.base,gene_scaffold_info_dict)
-        plot_genelen_percentcomp(args.base,gene_scaffold_info_dict)
-
-
+        #plot_genelen_percentcomp(args.base,gene_scaffold_info_dict)
 
         single_gene_dict,mutli_gene_dict = seperate_into_classes(gmap_melted_dict)
-
         final_gene_count = calculate_final_gene_count(single_gene_dict, \
                 mutli_gene_dict,args.gn)
 
