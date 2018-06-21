@@ -63,9 +63,6 @@ def rename_dict(mapping_dict, fasta_dict):
         print(seq)
 
         
-read_in_genome = GenomeReader(argv[1])
-map_dict = read_mapping_file(argv[2])
-rename_dict(map_dict,read_in_genome)
 
 
 def get_parser():
@@ -74,10 +71,10 @@ def get_parser():
     parser.add_argument('-f','--fasta', help='fasta file to read', \
             required=True, dest='f')
     parser.add_argument('-m','--map', help='reads in mapping file',\
-            required=False,dest='s') 
-    #Must add output file
-    #parser.add_argument('-l','--locsplit', help='location in ccaffold to split',\
-    #        required=False,dest='l') 
+            required=False,dest='m') 
+
+    args = vars(parser.parse_args())
+    return parser
 
 
 if __name__ == "__main__":
